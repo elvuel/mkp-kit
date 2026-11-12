@@ -1,0 +1,991 @@
+package mkpgo
+
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+)
+
+const (
+	EOFDefault = "<EOF>"
+	EOFCLI     = "cli>"
+)
+
+// Parser registry and shared parser errors.
+// 解析器注册表与通用错误定义。
+var (
+	// RawDirectiveOutputParsers maps directive verb to its output parser.
+	// RawDirectiveOutputParsers 将指令名映射到对应输出解析器。
+	RawDirectiveOutputParsers = make(map[string]RawDirectiveOutputParser)
+	// Parser related common errors.
+	// 解析器相关通用错误。
+	ErrDirectiveParserMissing      = errors.New("directive parser missing")
+	ErrRawDirectiveParseFailed     = errors.New("raw directive parse failed")
+	ErrRawDirecitveExecutionFailed = errors.New("raw directive execution failed")
+)
+
+// Built-in parser assertions and singleton instances.
+// 内置解析器的接口断言与单例实例。
+var (
+	// Interface implementation assertions.
+	// 接口实现断言。
+	_ RawDirectiveOutputParser = (*RawDirective_sn)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_list_dir)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_join)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_wifi_auto)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_adumj)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_ahttpbase)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_aget)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_aput)(nil)
+	_ RawDirectiveOutputParser = (*RawDirective_ajson2log)(nil)
+
+	// Built-in singleton parser instances.
+	// 内置解析器单例实例。
+	InstantRawDirective_sn          = NewRawDirective_sn()
+	InstantRawDirective_list_dir    = NewRawDirective_list_dir()
+	InstantRawDirective_clean_dir   = NewRawDirective_clean_dir()
+	InstantRawDirective_alive       = NewRawDirective_alive()
+	InstantRawDirective_atime       = NewRawDirective_atime()
+	InstantRawDirective_aversion    = NewRawDirective_aversion()
+	InstantRawDirective_delete_file = NewRawDirective_delete_file()
+	InstantRawDirective_ainsp       = NewRawDirective_ainsp()
+	InstantRawDirective_astop       = NewRawDirective_astop()
+	InstantRawDirective_acancel     = NewRawDirective_acancel()
+	InstantRawDirective_alog        = NewRawDirective_alog()
+	InstantRawDirective_join        = NewRawDirective_join()
+	InstantRawDirective_wifi_auto   = NewRawDirective_wifi_auto()
+	InstantRawDirective_adumj       = NewRawDirective_adumj()
+	InstantRawDirective_ahttpbase   = NewRawDirective_ahttpbase()
+	InstantRawDirective_aget        = NewRawDirective_aget()
+	InstantRawDirective_aput        = NewRawDirective_aput()
+	InstantRawDirective_ajson2log   = NewRawDirective_ajson2log()
+)
+
+// InitParsers registers built-in directive output parsers.
+// InitParsers 注册内置指令输出解析器。
+func InitParsers() {
+	parsers := []RawDirectiveOutputParser{
+		InstantRawDirective_sn,
+		InstantRawDirective_list_dir,
+		InstantRawDirective_delete_file,
+		InstantRawDirective_clean_dir,
+		InstantRawDirective_aversion,
+		InstantRawDirective_atime,
+		InstantRawDirective_alive,
+		InstantRawDirective_ainsp,
+		InstantRawDirective_astop,
+		InstantRawDirective_acancel,
+		InstantRawDirective_alog,
+		InstantRawDirective_join,
+		InstantRawDirective_wifi_auto,
+		InstantRawDirective_adumj,
+		InstantRawDirective_ahttpbase,
+		InstantRawDirective_aget,
+		InstantRawDirective_aput,
+		InstantRawDirective_ajson2log,
+	}
+
+	for _, parser := range parsers {
+		RegisterRawDirectiveOutputParser(parser)
+	}
+}
+
+// GetRawDirective extracts directive verb from full command.
+// GetRawDirective 从完整命令提取原始指令名。
+func GetRawDirective(directive string) string {
+	return strings.Split(directive, " ")[0]
+}
+
+// GetRawDirectiveOutputParser returns parser bound to directive verb.
+// GetRawDirectiveOutputParser 返回对应指令解析器。
+func GetRawDirectiveOutputParser(directive string) RawDirectiveOutputParser {
+	rawDirective := GetRawDirective(directive)
+
+	return RawDirectiveOutputParsers[rawDirective]
+}
+
+// RegisterRawDirectiveOutputParser registers one parser by name.
+// RegisterRawDirectiveOutputParser 按名称注册一个解析器。
+func RegisterRawDirectiveOutputParser(parser RawDirectiveOutputParser) {
+	RawDirectiveOutputParsers[parser.String()] = parser
+}
+
+// RawDirectiveOutputParser defines parse contract for raw CLI output.
+// RawDirectiveOutputParser 定义原始 CLI 输出解析契约。
+type RawDirectiveOutputParser interface {
+	String() string
+	Parse(string, string) (string, error) // 第一个是cli 完整指令（含参数), 第二个是输出
+	UnmarshalTo(string, interface{}) error
+	IsJSONOutput() bool
+	EOFFlag() string
+}
+
+// RawDirective provides shared parser behavior.
+// RawDirective 提供解析器公共行为。
+type RawDirective struct {
+	JSONOutput bool
+}
+
+// SanitizeR removes carriage returns from raw output.
+// SanitizeR 移除输出中的回车符。
+func (*RawDirective) SanitizeR(data string) string {
+	return strings.ReplaceAll(data, "\r", "")
+}
+
+// UnmarshalTo decodes JSON text into target object.
+// UnmarshalTo 将 JSON 文本反序列化到目标对象。
+func (r *RawDirective) UnmarshalTo(data string, ref interface{}) error {
+	return json.Unmarshal([]byte(data), ref)
+}
+
+// PreFlight performs common sanitation and execution-failure check.
+// PreFlight 执行公共清洗与执行失败检测。
+func (r *RawDirective) PreFlight(data string) (string, error) {
+	data = r.SanitizeR(data)
+
+	if r.IsExecutionFailed(data) {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+
+	return data, nil
+}
+
+// IsExecutionFailed checks firmware error pattern in output.
+// IsExecutionFailed 判断输出中是否包含执行失败特征。
+func (r *RawDirective) IsExecutionFailed(data string) bool {
+	return strings.Contains(strings.ToLower(data), "command returned non-zero error code")
+}
+
+// IsJSONOutput reports whether parser expects JSON payload.
+// IsJSONOutput 返回是否期望 JSON 输出。
+func (r *RawDirective) IsJSONOutput() bool {
+	return r.JSONOutput
+}
+
+/* Built-in directive parsers / 内置指令解析器 */
+
+// RawDirective_astop parses astop output.
+// RawDirective_astop 解析 astop 指令输出。
+type RawDirective_astop struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_astop creates astop parser.
+// NewRawDirective_astop 创建 astop 解析器。
+func NewRawDirective_astop() *RawDirective_astop {
+	return &RawDirective_astop{Name: "astop", RawDirective: &RawDirective{}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_astop) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_astop) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses astop raw output.
+// Parse 解析 astop 原始输出。
+func (r *RawDirective_astop) Parse(_, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", ErrRawDirectiveParseFailed
+}
+
+// RawDirective_acancel parses acancel output.
+// RawDirective_acancel 解析 acancel 指令输出。
+type RawDirective_acancel struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_acancel creates acancel parser.
+// NewRawDirective_acancel 创建 acancel 解析器。
+func NewRawDirective_acancel() *RawDirective_acancel {
+	return &RawDirective_acancel{Name: "acancel", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_acancel) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_acancel) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses acancel raw output.
+// Parse 解析 acancel 原始输出。
+func (r *RawDirective_acancel) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", ErrRawDirectiveParseFailed
+}
+
+// RawDirective_sn parses sn output.
+// RawDirective_sn 解析 sn 指令输出。
+type RawDirective_sn struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_sn creates sn parser.
+// NewRawDirective_sn 创建 sn 解析器。
+func NewRawDirective_sn() *RawDirective_sn {
+	return &RawDirective_sn{Name: "sn", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_sn) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_sn) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses sn raw output.
+// Parse 解析 sn 原始输出。
+func (r *RawDirective_sn) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", ErrRawDirectiveParseFailed
+}
+
+// RawDirective_list_dir parses list_dir output.
+// RawDirective_list_dir 解析 list_dir 指令输出。
+type RawDirective_list_dir struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_list_dir creates list_dir parser.
+// NewRawDirective_list_dir 创建 list_dir 解析器。
+func NewRawDirective_list_dir() *RawDirective_list_dir {
+	return &RawDirective_list_dir{Name: "list_dir", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_list_dir) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_list_dir) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses list_dir raw output.
+// Parse 解析 list_dir 原始输出。
+func (r *RawDirective_list_dir) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", nil
+}
+
+// RawDirective_clean_dir parses clean_dir output.
+// RawDirective_clean_dir 解析 clean_dir 指令输出。
+type RawDirective_clean_dir struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_clean_dir creates clean_dir parser.
+// NewRawDirective_clean_dir 创建 clean_dir 解析器。
+func NewRawDirective_clean_dir() *RawDirective_clean_dir {
+	return &RawDirective_clean_dir{Name: "clean_dir", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_clean_dir) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_clean_dir) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses clean_dir raw output.
+// Parse 解析 clean_dir 原始输出。
+func (r *RawDirective_clean_dir) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	// E (2055915) sdcard: Failed to open directory: No such file or directory
+	if strings.Contains(data, "Failed to") {
+		return "", errors.New("failed to clean directory")
+	}
+
+	return "", nil
+}
+
+// RawDirective_delete_file parses delete_file output.
+// RawDirective_delete_file 解析 delete_file 指令输出。
+type RawDirective_delete_file struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_delete_file creates delete_file parser.
+// NewRawDirective_delete_file 创建 delete_file 解析器。
+func NewRawDirective_delete_file() *RawDirective_delete_file {
+	return &RawDirective_delete_file{Name: "delete_file", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_delete_file) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_delete_file) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses delete_file raw output.
+// Parse 解析 delete_file 原始输出。
+func (r *RawDirective_delete_file) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	// E (2055915) sdcard: Failed to remove /eMMC/applog/mkpdemo/1111.log: No such file or directory
+	if strings.Contains(data, "Failed to remove") {
+		return "", errors.New("failed to remove file")
+	}
+
+	return "", nil
+}
+
+// RawDirective_alive parses alive output.
+// RawDirective_alive 解析 alive 指令输出。
+type RawDirective_alive struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_alive creates alive parser.
+// NewRawDirective_alive 创建 alive 解析器。
+func NewRawDirective_alive() *RawDirective_alive {
+	return &RawDirective_alive{Name: "alive", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_alive) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_alive) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses alive raw output.
+// Parse 解析 alive 原始输出。
+func (r *RawDirective_alive) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", nil
+}
+
+// RawDirective_atime parses atime output.
+// RawDirective_atime 解析 atime 指令输出。
+type RawDirective_atime struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_atime creates atime parser.
+// NewRawDirective_atime 创建 atime 解析器。
+func NewRawDirective_atime() *RawDirective_atime {
+	return &RawDirective_atime{Name: "atime", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_atime) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_atime) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses atime raw output.
+// Parse 解析 atime 原始输出。
+func (r *RawDirective_atime) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	lines := strings.Split(data, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "{") && strings.Contains(line, `"seconds":`) {
+			return line, nil
+		}
+	}
+
+	return "", nil
+}
+
+// RawDirective_aversion parses aversion output.
+// RawDirective_aversion 解析 aversion 指令输出。
+type RawDirective_aversion struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_aversion creates aversion parser.
+// NewRawDirective_aversion 创建 aversion 解析器。
+func NewRawDirective_aversion() *RawDirective_aversion {
+	return &RawDirective_aversion{Name: "aversion", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_aversion) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_aversion) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses aversion raw output.
+// Parse 解析 aversion 原始输出。
+func (r *RawDirective_aversion) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", nil
+}
+
+// RawDirective_ainsp parses ainsp output (log metadata).
+// RawDirective_ainsp 解析 ainsp 指令输出（日志元信息）。
+type RawDirective_ainsp struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_ainsp creates ainsp parser.
+// NewRawDirective_ainsp 创建 ainsp 解析器。
+func NewRawDirective_ainsp() *RawDirective_ainsp {
+	return &RawDirective_ainsp{Name: "ainsp", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_ainsp) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_ainsp) EOFFlag() string {
+	return EOFDefault
+}
+
+// Parse parses ainsp raw output.
+// Parse 解析 ainsp 原始输出。
+func (r *RawDirective_ainsp) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	lines := strings.Split(data, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "{") && strings.Contains(line, `"seconds":`) && strings.Contains(line, `"width":`) {
+			return line, nil
+		}
+	}
+
+	return "", nil
+}
+
+// RawDirective_join parses join Wi-Fi output.
+// RawDirective_join 解析 join Wi-Fi 指令输出。
+type RawDirective_join struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_join creates join parser.
+// NewRawDirective_join 创建 join 解析器。
+func NewRawDirective_join() *RawDirective_join {
+	return &RawDirective_join{Name: "join", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_join) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_join) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses join raw output.
+// Parse 解析 join 原始输出。
+func (r *RawDirective_join) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+
+	lower := strings.ToLower(data)
+	if strings.Contains(lower, "error code") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if strings.Contains(data, "connect: Connected") {
+		return "connected", nil
+	}
+	if len(data) > 0 {
+		return data, ErrRawDirectiveParseFailed
+	}
+
+	return "", ErrRawDirectiveParseFailed
+}
+
+// RawDirective_wifi_auto parses wifi_auto output.
+// RawDirective_wifi_auto 解析 wifi_auto 指令输出。
+type RawDirective_wifi_auto struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_wifi_auto creates wifi_auto parser.
+// NewRawDirective_wifi_auto 创建 wifi_auto 解析器。
+func NewRawDirective_wifi_auto() *RawDirective_wifi_auto {
+	return &RawDirective_wifi_auto{Name: "wifi_auto", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_wifi_auto) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_wifi_auto) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses wifi_auto raw output.
+// Parse 解析 wifi_auto 原始输出。
+func (r *RawDirective_wifi_auto) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+
+	lower := strings.ToLower(data)
+	if strings.Contains(lower, "error code") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if strings.Contains(lower, "auto: on") {
+		return "on", nil
+	}
+	if strings.Contains(lower, "auto: off") {
+		return "off", nil
+	}
+	if len(strings.Fields(cli)) > 1 && data == "" {
+		return "", nil
+	}
+
+	return data, ErrRawDirectiveParseFailed
+}
+
+// RawDirective_adumj parses adumj output (action log JSON dump).
+// RawDirective_adumj 解析 adumj 指令输出（动作日志 JSON dump）。
+type RawDirective_adumj struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_adumj creates adumj parser.
+// NewRawDirective_adumj 创建 adumj 解析器。
+func NewRawDirective_adumj() *RawDirective_adumj {
+	return &RawDirective_adumj{Name: "adumj", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_adumj) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_adumj) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses adumj raw output.
+// Parse 解析 adumj 原始输出。
+func (r *RawDirective_adumj) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFDefault)
+	data = strings.TrimSpace(data)
+
+	start := strings.Index(data, "{")
+	end := strings.LastIndex(data, "}")
+	if start >= 0 && end >= start {
+		return strings.TrimSpace(data[start : end+1]), nil
+	}
+	if data == "" {
+		return "", nil
+	}
+
+	return data, ErrRawDirectiveParseFailed
+}
+
+// RawDirective_aget parses aget output (download from file server into MKP storage).
+// RawDirective_aget 解析 aget 指令输出（从文件服务器下载到 MKP 存储）。
+type RawDirective_aget struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_aget creates aget parser.
+// NewRawDirective_aget 创建 aget 解析器。
+func NewRawDirective_aget() *RawDirective_aget {
+	return &RawDirective_aget{Name: "aget", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_aget) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_aget) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses aget raw output.
+// Parse 解析 aget 原始输出。
+func (r *RawDirective_aget) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+
+	lower := strings.ToLower(data)
+	if strings.Contains(lower, "error code") || strings.Contains(lower, "server returned status") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if strings.Contains(data, "GET status=200") {
+		return data, nil
+	}
+	if strings.Contains(data, "GET status=") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if data == "" {
+		return "", ErrRawDirectiveParseFailed
+	}
+
+	return data, ErrRawDirectiveParseFailed
+}
+
+// RawDirective_aput parses aput output (upload from MKP storage to file server).
+// RawDirective_aput 解析 aput 指令输出（从 MKP 存储上传到文件服务器）。
+type RawDirective_aput struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_aput creates aput parser.
+// NewRawDirective_aput 创建 aput 解析器。
+func NewRawDirective_aput() *RawDirective_aput {
+	return &RawDirective_aput{Name: "aput", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_aput) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_aput) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses aput raw output.
+// Parse 解析 aput 原始输出。
+func (r *RawDirective_aput) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+
+	lower := strings.ToLower(data)
+	if strings.Contains(lower, "upload failed") || strings.Contains(lower, "failed to open file") || strings.Contains(lower, "error code") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if strings.Contains(data, "Upload OK") {
+		return data, nil
+	}
+	if data == "" {
+		return "", ErrRawDirectiveParseFailed
+	}
+
+	return data, ErrRawDirectiveParseFailed
+}
+
+// RawDirective_ajson2log parses ajson2log output (convert adumj JSON back to MKP log).
+// RawDirective_ajson2log 解析 ajson2log 指令输出（将 adumj JSON 转回 MKP log）。
+type RawDirective_ajson2log struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_ajson2log creates ajson2log parser.
+// NewRawDirective_ajson2log 创建 ajson2log 解析器。
+func NewRawDirective_ajson2log() *RawDirective_ajson2log {
+	return &RawDirective_ajson2log{Name: "ajson2log", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_ajson2log) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_ajson2log) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses ajson2log raw output.
+// Parse 解析 ajson2log 原始输出。
+func (r *RawDirective_ajson2log) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+
+	lower := strings.ToLower(data)
+	if strings.Contains(lower, "error code") {
+		return "", ErrRawDirecitveExecutionFailed
+	}
+	if data == "" {
+		return "", ErrRawDirectiveParseFailed
+	}
+
+	return data, nil
+}
+
+// RawDirective_ahttpbase parses ahttpbase output (file-management API endpoint base URL).
+// RawDirective_ahttpbase 解析 ahttpbase 指令输出（文件管理服务器 API endpoint base URL）。
+type RawDirective_ahttpbase struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_ahttpbase creates ahttpbase parser.
+// NewRawDirective_ahttpbase 创建 ahttpbase 解析器。
+func NewRawDirective_ahttpbase() *RawDirective_ahttpbase {
+	return &RawDirective_ahttpbase{Name: "ahttpbase", RawDirective: &RawDirective{JSONOutput: true}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_ahttpbase) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_ahttpbase) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses ahttpbase raw output.
+// Parse 解析 ahttpbase 原始输出。
+func (r *RawDirective_ahttpbase) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFCLI)
+	data = strings.TrimSpace(data)
+	data = strings.TrimSuffix(data, EOFDefault)
+	data = strings.TrimSpace(data)
+
+	start := strings.Index(data, "{")
+	end := strings.LastIndex(data, "}")
+	if start >= 0 && end >= start {
+		return strings.TrimSpace(data[start : end+1]), nil
+	}
+
+	if strings.EqualFold(data, "OK") {
+		url := strings.TrimSpace(strings.TrimPrefix(cli, r.Name))
+		encoded, err := json.Marshal(AHTTPBase{AHTTPBase: url})
+		if err != nil {
+			return "", err
+		}
+		return string(encoded), nil
+	}
+
+	if data == "" {
+		return "", nil
+	}
+
+	return data, ErrRawDirectiveParseFailed
+}
+
+// RawDirective_alog parses alog output.
+// RawDirective_alog 解析 alog 指令输出。
+type RawDirective_alog struct {
+	*RawDirective
+	Name string
+}
+
+// NewRawDirective_alog creates alog parser.
+// NewRawDirective_alog 创建 alog 解析器。
+func NewRawDirective_alog() *RawDirective_alog {
+	return &RawDirective_alog{Name: "alog", RawDirective: &RawDirective{JSONOutput: false}}
+}
+
+// String returns directive name.
+// String 返回对应指令名。
+func (r *RawDirective_alog) String() string {
+	return r.Name
+}
+
+func (r *RawDirective_alog) EOFFlag() string {
+	return EOFCLI
+}
+
+// Parse parses alog raw output.
+// Parse 解析 alog 原始输出。
+func (r *RawDirective_alog) Parse(cli, data string) (string, error) {
+	data, err := r.PreFlight(data)
+	if err != nil {
+		return "", err
+	}
+
+	data = strings.TrimSpace(data)
+	data = strings.TrimPrefix(data, cli)
+
+	if len(data) > 0 {
+		return data, nil
+	}
+
+	return "", nil
+}

@@ -1,0 +1,658 @@
+package helper
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
+	mkpgo "github.com/elvuel/mkp-go"
+)
+
+var errSyncOutputDisabled = errors.New("please enable sync mode first")
+
+func requireSyncOutputEnabled(sfport *mkpgo.SFSerialPort) error {
+	if !sfport.IsSyncOutputEnabled() {
+		return errSyncOutputDisabled
+	}
+
+	return nil
+}
+
+func parseDirectiveResult(sfport *mkpgo.SFSerialPort, directive, result string) (mkpgo.RawDirectiveOutputParser, string, error) {
+	parser := sfport.GetRawDirectiveOutputParser(directive)
+	if parser == nil {
+		return nil, "", mkpgo.ErrDirectiveParserMissing
+	}
+
+	parsedResult, err := parser.Parse(directive, result)
+	if err != nil {
+		return parser, parsedResult, sfport.WrapDirectiveDebugError("parse_failed", directive, result, &parsedResult, err)
+	}
+
+	return parser, parsedResult, nil
+}
+
+func sendDirectiveParsedResult(ctx context.Context, sfport *mkpgo.SFSerialPort, directive string, opts ...mkpgo.DirectiveOption) (string, error) {
+	if err := requireSyncOutputEnabled(sfport); err != nil {
+		return "", err
+	}
+
+	result, err := sfport.SendDirectiveContext(ctx, directive, opts...)
+	if err != nil {
+		return "", err
+	}
+
+	_, parsedResult, err := parseDirectiveResult(sfport, directive, result)
+	return parsedResult, err
+}
+
+func sendDirectiveParsedOnly(ctx context.Context, sfport *mkpgo.SFSerialPort, directive string, opts ...mkpgo.DirectiveOption) error {
+	if err := requireSyncOutputEnabled(sfport); err != nil {
+		return err
+	}
+
+	result, err := sfport.SendDirectiveContext(ctx, directive, opts...)
+	if err != nil {
+		return err
+	}
+
+	_, _, err = parseDirectiveResult(sfport, directive, result)
+	return err
+}
+
+func sendDirectiveParsedJSON(ctx context.Context, sfport *mkpgo.SFSerialPort, directive string, target interface{}, opts ...mkpgo.DirectiveOption) error {
+	if err := requireSyncOutputEnabled(sfport); err != nil {
+		return err
+	}
+
+	result, err := sfport.SendDirectiveContext(ctx, directive, opts...)
+	if err != nil {
+		return err
+	}
+
+	parser, parsedResult, err := parseDirectiveResult(sfport, directive, result)
+	if err != nil {
+		return err
+	}
+	if !parser.IsJSONOutput() {
+		return mkpgo.ErrDirectiveParserMissing
+	}
+
+	if err := parser.UnmarshalTo(parsedResult, target); err != nil {
+		return sfport.WrapDirectiveDebugError("parse_failed", directive, result, &parsedResult, err)
+	}
+	return nil
+}
+
+func StopRecord(sfport *mkpgo.SFSerialPort) error {
+	return StopRecordContext(context.Background(), sfport)
+}
+
+func StopRecordContext(ctx context.Context, sfport *mkpgo.SFSerialPort) error {
+	return sfport.StopRecordingContext(ctx)
+}
+
+func StartRecord(sfport *mkpgo.SFSerialPort, logName string, opt *mkpgo.LogOption) error {
+	return StartRecordContext(context.Background(), sfport, logName, opt)
+}
+
+func StartRecordContext(ctx context.Context, sfport *mkpgo.SFSerialPort, logName string, opt *mkpgo.LogOption) error {
+	args := make([]string, 0)
+	args = append(args, logName)
+
+	if opt != nil {
+		args = append(args, opt.CliArgs()...)
+	}
+	return sfport.StartRecordingContext(ctx, strings.Join(args, " "))
+}
+
+func Alog(sfport *mkpgo.SFSerialPort, logName string, opt *mkpgo.LogOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return AlogContext(context.Background(), sfport, logName, opt, opts...)
+}
+
+func AlogContext(ctx context.Context, sfport *mkpgo.SFSerialPort, logName string, opt *mkpgo.LogOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	args := make([]string, 0)
+	args = append(args, logName)
+
+	if opt != nil {
+		args = append(args, opt.CliArgs()...)
+	}
+
+	directive := "alog " + strings.Join(args, " ")
+	fmt.Println(directive)
+
+	// log.Println("got ################ alog response:", result)
+	return sendDirectiveParsedResult(ctx, sfport, directive, opts...)
+}
+
+func Astop(sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) error {
+	return AstopContext(context.Background(), sfport, opts...)
+}
+
+func AstopContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) error {
+	return sendDirectiveParsedOnly(ctx, sfport, "astop", opts...)
+}
+
+func Cancel(sfport *mkpgo.SFSerialPort) error {
+	return CancelContext(context.Background(), sfport)
+}
+
+func CancelContext(ctx context.Context, sfport *mkpgo.SFSerialPort) error {
+	return sfport.CancelReplayContext(ctx)
+}
+
+// Join connects the device to Wi-Fi using join directive.
+// Join 使用 join 指令连接 Wi-Fi；opt 为 nil 或空时使用最近保存的 Wi-Fi 配置；opts 可覆盖本次同步等待设置。
+func Join(sfport *mkpgo.SFSerialPort, opt *mkpgo.JoinOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return JoinContext(context.Background(), sfport, opt, opts...)
+}
+
+// JoinContext connects the device to Wi-Fi using join directive with context.
+// JoinContext 使用 join 指令和 context 连接 Wi-Fi；opt 为 nil 或空时使用最近保存的 Wi-Fi 配置；opts 可覆盖本次同步等待设置。
+func JoinContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.JoinOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	directive := "join"
+	if args := opt.CliArgs(); len(args) > 0 {
+		directive += " " + strings.Join(args, " ")
+	}
+
+	return sendDirectiveParsedResult(ctx, sfport, directive, opts...)
+}
+
+// WifiAuto inspects or changes Wi-Fi auto-connect state using wifi_auto directive.
+// WifiAuto 使用 wifi_auto 指令查看或修改 Wi-Fi 自动连接状态；opt 为 nil 或空时查询当前状态。
+func WifiAuto(sfport *mkpgo.SFSerialPort, opt *mkpgo.WifiAutoOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return WifiAutoContext(context.Background(), sfport, opt, opts...)
+}
+
+// WifiAutoContext inspects or changes Wi-Fi auto-connect state using wifi_auto directive with context.
+// WifiAutoContext 使用 wifi_auto 指令和 context 查看或修改 Wi-Fi 自动连接状态；opt 为 nil 或空时查询当前状态。
+func WifiAutoContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.WifiAutoOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	if opt != nil && opt.State != "" && opt.State != "1" && opt.State != "0" {
+		return "", errors.New("wifi_auto state must be \"1\" or \"0\"")
+	}
+
+	directive := "wifi_auto"
+	if args := opt.CliArgs(); len(args) > 0 {
+		directive += " " + strings.Join(args, " ")
+	}
+
+	return sendDirectiveParsedResult(ctx, sfport, directive, opts...)
+}
+
+// DeviceSN 指令 返回设备序列号
+func DeviceSN(sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.SN, error) {
+	return DeviceSNContext(context.Background(), sfport, opts...)
+}
+
+// DeviceSNContext 指令 返回设备序列号
+func DeviceSNContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.SN, error) {
+	sn := &mkpgo.SN{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "sn", sn, opts...); err != nil {
+		return nil, err
+	}
+
+	return sn, nil
+}
+
+// ListDir 指令 返回路径下的所有子目录及文件
+func ListDir(sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.FileSystem, error) {
+	return ListDirContext(context.Background(), sfport, path, opts...)
+}
+
+// ListDirContext 指令 返回路径下的所有子目录及文件
+func ListDirContext(ctx context.Context, sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.FileSystem, error) {
+	fssys := &mkpgo.FileSystem{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "list_dir "+path, fssys, opts...); err != nil {
+		return nil, err
+	}
+	if fssys.Error != "" {
+		return nil, errors.New(fssys.Error)
+	}
+
+	return fssys, nil
+}
+
+func ComposeLogDirctory(logDir string) string {
+	if !strings.HasPrefix(logDir, "/eMMC/applog") {
+		return "/eMMC/applog/" + logDir
+	}
+
+	return logDir
+}
+
+func CleanDir(sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) error {
+	return CleanDirContext(context.Background(), sfport, path, opts...)
+}
+
+func CleanDirContext(ctx context.Context, sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) error {
+	if !strings.HasPrefix(path, "/eMMC/applog") {
+		return errors.New("only can clean directory in working directory") // only can delete file within /eMMC/applog
+	}
+
+	return sendDirectiveParsedOnly(ctx, sfport, "clean_dir "+path, opts...)
+}
+
+func ComposeLogFullpath(logPath string) string {
+	if !strings.HasSuffix(logPath, ".log") {
+		logPath += ".log"
+	}
+
+	if !strings.HasPrefix(logPath, "/eMMC/applog/") {
+		return "/eMMC/applog/" + logPath
+	}
+
+	return logPath
+}
+
+// DeleteFile 指令 只能删除在/eMMC/applog下的文件(path 路径)
+func DeleteFile(sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) error {
+	return DeleteFileContext(context.Background(), sfport, path, opts...)
+}
+
+// DeleteFileContext 指令 只能删除在/eMMC/applog下的文件(path 路径)
+func DeleteFileContext(ctx context.Context, sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) error {
+	path = ComposeLogFullpath(path)
+
+	if !strings.HasPrefix(path, "/eMMC/applog") {
+		return errors.New("only can delete file in working directory") // only can delete file within /eMMC/applog
+	}
+
+	return sendDirectiveParsedOnly(ctx, sfport, "delete_file "+path, opts...)
+}
+
+// Alive 指令 心跳时间戳
+func Alive(sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.Heartbeat, error) {
+	return AliveContext(context.Background(), sfport, opts...)
+}
+
+// AliveContext 指令 心跳时间戳
+func AliveContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.Heartbeat, error) {
+	hb := &mkpgo.Heartbeat{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "alive", hb, opts...); err != nil {
+		return nil, err
+	}
+
+	return hb, nil
+}
+
+// Atime 指令 返回 日志时长。 path可以是相对路径(.log扩展 - mkpdemo/1129f40), 也可以是绝对路径(/eMMC/applog/mkpdemo/1129f40.log)
+func Atime(sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.LogLength, error) {
+	return AtimeContext(context.Background(), sfport, path, opts...)
+}
+
+// AtimeContext 指令 返回日志时长
+func AtimeContext(ctx context.Context, sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.LogLength, error) {
+	o := &mkpgo.LogLength{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "atime "+path, o, opts...); err != nil {
+		return nil, err
+	}
+
+	return o, nil
+}
+
+// Aversion 指令 返回 版本信息。
+func Aversion(sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.MKPVersion, error) {
+	return AversionContext(context.Background(), sfport, opts...)
+}
+
+// AversionContext 指令 返回版本信息。
+func AversionContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...mkpgo.DirectiveOption) (*mkpgo.MKPVersion, error) {
+	o := &mkpgo.MKPVersion{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "aversion", o, opts...); err != nil {
+		return nil, err
+	}
+
+	return o, nil
+}
+
+// AUploadToMKP uploads a file-server file to the corresponding MKP path using aget directive.
+// AUploadToMKP 使用 aget 指令将文件服务器中的文件下载/上传到 MKP 对应路径。
+func AUploadToMKP(sfport *mkpgo.SFSerialPort, opt *mkpgo.AGetOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return AUploadToMKPContext(context.Background(), sfport, opt, opts...)
+}
+
+// AUploadToMKPContext uploads a file-server file to the corresponding MKP path using aget directive with context.
+// AUploadToMKPContext 使用 aget 指令和 context 将文件服务器中的文件下载/上传到 MKP 对应路径。
+func AUploadToMKPContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.AGetOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	if opt == nil || opt.FilePath == "" {
+		return "", errors.New("aget file path is required")
+	}
+
+	return sendDirectiveParsedResult(ctx, sfport, "aget "+strings.Join(opt.CliArgs(), " "), opts...)
+}
+
+// ADownloadFromMKP downloads/uploads a MKP file to the corresponding file-server path using aput directive.
+// ADownloadFromMKP 使用 aput 指令将 MKP 文件下载/上传到文件服务器对应路径。
+func ADownloadFromMKP(sfport *mkpgo.SFSerialPort, opt *mkpgo.APutOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return ADownloadFromMKPContext(context.Background(), sfport, opt, opts...)
+}
+
+// ADownloadFromMKPContext downloads/uploads a MKP file to the corresponding file-server path using aput directive with context.
+// ADownloadFromMKPContext 使用 aput 指令和 context 将 MKP 文件下载/上传到文件服务器对应路径。
+func ADownloadFromMKPContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.APutOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	if opt == nil || opt.FilePath == "" {
+		return "", errors.New("aput file path is required")
+	}
+
+	return sendDirectiveParsedResult(ctx, sfport, "aput "+strings.Join(opt.CliArgs(), " "), opts...)
+}
+
+// AJSON2Log converts an adumj JSON file back to MKP log format using ajson2log directive.
+// AJSON2Log 使用 ajson2log 指令将 adumj JSON 文件转回 MKP log 格式。
+func AJSON2Log(sfport *mkpgo.SFSerialPort, opt *mkpgo.AJSON2LogOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	return AJSON2LogContext(context.Background(), sfport, opt, opts...)
+}
+
+// AJSON2LogContext converts an adumj JSON file back to MKP log format using ajson2log directive with context.
+// AJSON2LogContext 使用 ajson2log 指令和 context 将 adumj JSON 文件转回 MKP log 格式。
+func AJSON2LogContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.AJSON2LogOption, opts ...mkpgo.DirectiveOption) (string, error) {
+	if opt == nil || opt.JSONPath == "" {
+		return "", errors.New("ajson2log json path is required")
+	}
+	if opt.OutputLogPath == "" {
+		return "", errors.New("ajson2log output log path is required")
+	}
+
+	return sendDirectiveParsedResult(ctx, sfport, "ajson2log "+strings.Join(opt.CliArgs(), " "), opts...)
+}
+
+// AHTTPBase inspects or sets file-management API endpoint base URL using ahttpbase directive.
+// AHTTPBase 使用 ahttpbase 指令查看或设置文件管理服务器 API endpoint base URL。
+func AHTTPBase(sfport *mkpgo.SFSerialPort, opt *mkpgo.AHTTPBaseOption, opts ...mkpgo.DirectiveOption) (*mkpgo.AHTTPBase, error) {
+	return AHTTPBaseContext(context.Background(), sfport, opt, opts...)
+}
+
+// AHTTPBaseContext inspects or sets file-management API endpoint base URL using ahttpbase directive with context.
+// AHTTPBaseContext 使用 ahttpbase 指令和 context 查看或设置文件管理服务器 API endpoint base URL。
+func AHTTPBaseContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.AHTTPBaseOption, opts ...mkpgo.DirectiveOption) (*mkpgo.AHTTPBase, error) {
+	directive := "ahttpbase"
+	if args := opt.CliArgs(); len(args) > 0 {
+		directive += " " + strings.Join(args, " ")
+	}
+
+	base := &mkpgo.AHTTPBase{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, directive, base, opts...); err != nil {
+		return nil, err
+	}
+
+	return base, nil
+}
+
+// Adumj dumps an action log as readable JSON using adumj directive.
+// Adumj 使用 adumj 指令将动作日志转储为便于解读的 JSON。
+func Adumj(sfport *mkpgo.SFSerialPort, opt *mkpgo.AdumjOption, opts ...mkpgo.DirectiveOption) (*mkpgo.ActionDump, error) {
+	return AdumjContext(context.Background(), sfport, opt, opts...)
+}
+
+// AdumjContext dumps an action log as readable JSON using adumj directive with context.
+// AdumjContext 使用 adumj 指令和 context 将动作日志转储为便于解读的 JSON。
+func AdumjContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.AdumjOption, opts ...mkpgo.DirectiveOption) (*mkpgo.ActionDump, error) {
+	if opt == nil || opt.LogPath == "" {
+		return nil, errors.New("adumj log path is required")
+	}
+
+	dump := &mkpgo.ActionDump{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "adumj "+strings.Join(opt.CliArgs(), " "), dump, opts...); err != nil {
+		return nil, err
+	}
+
+	return dump, nil
+}
+
+// AInspect 指令 返回 日志基础信息。 path可以是相对路径(.log扩展 - mkpdemo/1129f40), 也可以是绝对路径(/eMMC/applog/mkpdemo/1129f40.log)
+func AInspect(sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.LogInfo, error) {
+	return AInspectContext(context.Background(), sfport, path, opts...)
+}
+
+// AInspectContext 指令 返回日志基础信息。
+func AInspectContext(ctx context.Context, sfport *mkpgo.SFSerialPort, path string, opts ...mkpgo.DirectiveOption) (*mkpgo.LogInfo, error) {
+	o := &mkpgo.LogInfo{}
+	if err := sendDirectiveParsedJSON(ctx, sfport, "ainsp "+path, o, opts...); err != nil {
+		return nil, err
+	}
+
+	return o, nil
+}
+
+// KeyDown presses one key using optional kpad settings.
+// KeyDown 使用可选的 kpad 配置按下单个按键。
+func KeyDown(sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	return KeyDownContext(context.Background(), sfport, key, opts...)
+}
+
+// KeyDownContext presses one key using optional kpad settings and context.
+// KeyDownContext 使用可选的 kpad 配置和 context 按下单个按键。
+func KeyDownContext(ctx context.Context, sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	return sendKeyDownContext(ctx, sfport, resolveKpadOption(firstKpadOption(opts...)), key)
+}
+
+// KeyUp releases one key using optional kpad settings.
+// KeyUp 使用可选的 kpad 配置释放单个按键。
+func KeyUp(sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	return KeyUpContext(context.Background(), sfport, key, opts...)
+}
+
+// KeyUpContext releases one key using optional kpad settings and context.
+// KeyUpContext 使用可选的 kpad 配置和 context 释放单个按键。
+func KeyUpContext(ctx context.Context, sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	return sendKeyUpContext(ctx, sfport, resolveKpadOption(firstKpadOption(opts...)), key)
+}
+
+// KeyTap performs a press-then-release for one key using optional kpad settings.
+// KeyTap 使用可选的 kpad 配置对单个按键执行按下再释放。
+func KeyTap(sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	return KeyTapContext(context.Background(), sfport, key, opts...)
+}
+
+// KeyTapContext performs a press-then-release for one key using optional kpad settings and context.
+// KeyTapContext 使用可选的 kpad 配置和 context 对单个按键执行按下再释放。
+func KeyTapContext(ctx context.Context, sfport *mkpgo.SFSerialPort, key string, opts ...*mkpgo.KpadOption) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	opt := resolveKpadOption(firstKpadOption(opts...))
+	sleep := rand.Intn(100) + 20
+	if err := sendKeyDownContext(ctx, sfport, opt, key); err != nil {
+		return err
+	}
+
+	timer := time.NewTimer(time.Duration(sleep) * time.Millisecond)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+	}
+
+	if err := sendKeyUpContext(ctx, sfport, opt, key); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// KeyPresses taps keys sequentially using optional kpad settings.
+// KeyPresses 使用可选的 kpad 配置依次点击多个按键。
+func KeyPresses(sfport *mkpgo.SFSerialPort, keys []string, sleep int, opts ...*mkpgo.KpadOption) error {
+	return KeyPressesContext(context.Background(), sfport, keys, sleep, opts...)
+}
+
+// KeyPressesContext taps keys sequentially using optional kpad settings and context.
+// KeyPressesContext 使用可选的 kpad 配置和 context 依次点击多个按键。
+func KeyPressesContext(ctx context.Context, sfport *mkpgo.SFSerialPort, keys []string, sleep int, opts ...*mkpgo.KpadOption) error {
+	opt := resolveKpadOption(firstKpadOption(opts...))
+	for _, key := range keys {
+		if err := KeyTapContext(ctx, sfport, key, opt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// firstKpadOption returns the first provided kpad option, if any.
+// firstKpadOption 返回传入的第一个 kpad 配置（若存在）。
+func firstKpadOption(opts ...*mkpgo.KpadOption) *mkpgo.KpadOption {
+	if len(opts) == 0 {
+		return nil
+	}
+	return opts[0]
+}
+
+// resolveKpadOption returns a usable kpad option, filling in the default when nil.
+// resolveKpadOption 返回可用的 kpad 配置；若为 nil 则补默认值。
+func resolveKpadOption(opt *mkpgo.KpadOption) *mkpgo.KpadOption {
+	if opt != nil {
+		return opt
+	}
+	return mkpgo.NewKpadOption().WithDelay(0)
+}
+
+// cloneKpadOption makes a shallow copy plus slice copy for mutable kpad fields.
+// cloneKpadOption 复制 kpad 配置，并拷贝可变切片字段。
+func cloneKpadOption(opt *mkpgo.KpadOption) *mkpgo.KpadOption {
+	if opt == nil {
+		return nil
+	}
+
+	cloned := *opt
+	cloned.ModKeys = append(mkpgo.KpadModKeys(nil), opt.ModKeys...)
+	return &cloned
+}
+
+// resolveKpadReleaseOption clones a preset release option and applies runtime overrides.
+// resolveKpadReleaseOption 复制预置释放配置，并合并运行时覆盖项。
+func resolveKpadReleaseOption(base *mkpgo.KpadOption, override *mkpgo.KpadOption) *mkpgo.KpadOption {
+	opt := cloneKpadOption(base)
+	if opt == nil {
+		opt = mkpgo.NewKpadOption().WithDelay(0)
+	}
+	if override != nil {
+		opt.Async = override.Async
+		opt.SyncIgnoreOutput = override.SyncIgnoreOutput
+		opt.Verbose = override.Verbose
+	}
+	return opt
+}
+
+// firstM10Option returns the first provided m10 option, if any.
+// firstM10Option 返回传入的第一个 m10 配置（若存在）。
+func firstM10Option(opts ...*mkpgo.M10Option) *mkpgo.M10Option {
+	if len(opts) == 0 {
+		return nil
+	}
+	return opts[0]
+}
+
+// cloneM10Option makes a shallow copy of one m10 option.
+// cloneM10Option 浅拷贝一个 m10 配置。
+func cloneM10Option(opt *mkpgo.M10Option) *mkpgo.M10Option {
+	if opt == nil {
+		return nil
+	}
+
+	cloned := *opt
+	return &cloned
+}
+
+// resolveMouseReleaseOption builds a release-all m10 option while preserving overrides such as async.
+// resolveMouseReleaseOption 构建鼠标全释放的 m10 配置，同时保留 async 等覆盖项。
+func resolveMouseReleaseOption(override *mkpgo.M10Option) *mkpgo.M10Option {
+	opt := mkpgo.NewM10Option()
+	if override != nil {
+		opt = cloneM10Option(override)
+		opt.Reset()
+	}
+	opt.SetButton(0)
+	return opt
+}
+
+// sendKeyDown sends a prepared key-down sequence.
+// sendKeyDown 发送准备好的按下按键序列。
+func sendKeyDown(sfport *mkpgo.SFSerialPort, opt *mkpgo.KpadOption, key string) error {
+	return sendKeyDownContext(context.Background(), sfport, opt, key)
+}
+
+// sendKeyDownContext sends a prepared key-down sequence with context.
+// sendKeyDownContext 使用 context 发送准备好的按下按键序列。
+func sendKeyDownContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.KpadOption, key string) error {
+	if strings.TrimSpace(key) == "" {
+		return nil
+	}
+
+	downOpt := opt.KeyDown(key)
+	return sfport.KeypadContext(ctx, downOpt)
+}
+
+// sendKeyUp sends a prepared key-up sequence.
+// sendKeyUp 发送准备好的释放按键序列。
+func sendKeyUp(sfport *mkpgo.SFSerialPort, opt *mkpgo.KpadOption, key string) error {
+	return sendKeyUpContext(context.Background(), sfport, opt, key)
+}
+
+// sendKeyUpContext sends a prepared key-up sequence with context.
+// sendKeyUpContext 使用 context 发送准备好的释放按键序列。
+func sendKeyUpContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.KpadOption, key string) error {
+	releaseOpt, remainHoldOpt := opt.KeyUp(key)
+	if releaseOpt != nil {
+		if err := sfport.KeypadContext(ctx, releaseOpt); err != nil {
+			return err
+		}
+	}
+	if remainHoldOpt != nil {
+		if err := sfport.KeypadContext(ctx, remainHoldOpt); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// KeypadRelease releases current keyboard slots to NONE using optional kpad settings.
+// KeypadRelease 使用可选的 kpad 配置将当前键位槽释放为 NONE。
+func KeypadRelease(sfport *mkpgo.SFSerialPort, opts ...*mkpgo.KpadOption) error {
+	return KeypadReleaseContext(context.Background(), sfport, opts...)
+}
+
+// KeypadReleaseContext releases current keyboard slots to NONE using optional kpad settings and context.
+// KeypadReleaseContext 使用可选的 kpad 配置和 context 将当前键位槽释放为 NONE。
+func KeypadReleaseContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...*mkpgo.KpadOption) error {
+	return sfport.KeypadContext(ctx, resolveKpadReleaseOption(mkpgo.HidKpadRelease, firstKpadOption(opts...)))
+}
+
+// KeypadReleaseAll sends a full release packet using optional kpad settings.
+// KeypadReleaseAll 使用可选的 kpad 配置发送键盘全释放包。
+func KeypadReleaseAll(sfport *mkpgo.SFSerialPort, opts ...*mkpgo.KpadOption) error {
+	return KeypadReleaseAllContext(context.Background(), sfport, opts...)
+}
+
+// KeypadReleaseAllContext sends a full release packet using optional kpad settings and context.
+// KeypadReleaseAllContext 使用可选的 kpad 配置和 context 发送键盘全释放包。
+func KeypadReleaseAllContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...*mkpgo.KpadOption) error {
+	if err := sfport.KeypadContext(ctx, resolveKpadReleaseOption(mkpgo.HidKpadReleaseAll, firstKpadOption(opts...))); err != nil {
+		return err
+	}
+	mkpgo.ResetKpadPressedCaches()
+	return nil
+}
+
+// MouseReleaseAll releases all mouse buttons using optional m10 settings.
+// MouseReleaseAll 使用可选的 m10 配置释放全部鼠标按键。
+func MouseReleaseAll(sfport *mkpgo.SFSerialPort, opts ...*mkpgo.M10Option) error {
+	return MouseReleaseAllContext(context.Background(), sfport, opts...)
+}
+
+// MouseReleaseAllContext releases all mouse buttons using optional m10 settings and context.
+// MouseReleaseAllContext 使用可选的 m10 配置和 context 释放全部鼠标按键。
+func MouseReleaseAllContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opts ...*mkpgo.M10Option) error {
+	return sfport.Mouse10Context(ctx, resolveMouseReleaseOption(firstM10Option(opts...)))
+}
+
+// M10 sends one m10 directive with context.
+// M10 使用 context 发送一条 m10 指令。
+func M10(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.M10Option) error {
+	return sfport.Mouse10Context(ctx, opt)
+}

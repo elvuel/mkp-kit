@@ -1,0 +1,1283 @@
+# MKP Go Command Reference
+
+English | [中文](./directives.md) | [README](./README.en.md)
+
+---
+
+> This document is based on the current repository code: `sf_serial_port.go`, `directive_parser.go`, `types_cli.go`, `types_m10.go`, `types_keycode.go`, and `helper/helper.go`.  
+> It provides a quick reference for **MKP CLI commands / Go APIs / options / output parsers**.
+
+## Table of Contents
+
+- [Conventions](#conventions)
+- [Example Index](#example-index)
+- [Quick Overview](#quick-overview)
+- [Synchronous and Asynchronous Sending](#synchronous-and-asynchronous-sending)
+- [Recording and Replay Commands](#recording-and-replay-commands)
+- [Device, Network, and Filesystem Commands](#device-network-and-filesystem-commands)
+- [Mouse Command: m10](#mouse-command-m10)
+- [Keyboard Command: kpad](#keyboard-command-kpad)
+- [Output Parser Index](#output-parser-index)
+- [Response Model Index](#response-model-index)
+- [Go API Index](#go-api-index)
+- [Draft / Unwrapped Commands](#draft--unwrapped-commands)
+
+## Conventions
+
+- Default serial type: `*mkpgo.SFSerialPort`, created by `mkpgo.NewSFSerialPort()`.
+- Default port flags: mouse `MousePortFlag = "1"`, keyboard `KeyboardPortFlag = "2"`.
+- All low-level commands are written to the serial port with `\r\n` appended.
+- The synchronous output switch is named `SyncOuputEnabled` in code. `NewSFSerialPort()` sets it to `true` by default.
+- When using synchronous output, start the read loop first: `go sfport.Read()`.
+- Built-in parsers are registered by `mkpgo.InitParsers()`; `init.go` calls it automatically.
+
+Minimal example:
+
+```go
+sfport := mkpgo.NewSFSerialPort()
+sfport.Name = "COM5"
+if err := sfport.Open(); err != nil {
+    panic(err)
+}
+defer sfport.Close()
+
+go sfport.Read()
+
+sn, err := helper.DeviceSN(sfport)
+fmt.Println(sn, err)
+```
+
+## Example Index
+
+The table below follows the same README style and summarizes the standalone directive examples. `aplay` and `acancel` are documented at the API level, but do not yet have dedicated example programs.
+
+| Directive | Source path | Run command | Behavior |
+|---|---|---|---|
+| `sn` | `examples/directives/sn/main.go` | `go run .\examples\directives\sn` | Query the device serial number |
+| `aversion` | `examples/directives/aversion/main.go` | `go run .\examples\directives\aversion` | Query version information |
+| `alive` | `examples/directives/alive/main.go` | `go run .\examples\directives\alive` | Query liveness / heartbeat |
+| `list_dir` | `examples/directives/list_dir/main.go` | `go run .\examples\directives\list_dir` | List the built-in `/eMMC` directory |
+| `clean_dir` | `examples/directives/clean_dir/main.go` | `go run .\examples\directives\clean_dir` | Clean `/eMMC/applog/subdir1` |
+| `delete_file` | `examples/directives/delete_file/main.go` | `go run .\examples\directives\delete_file` | Delete `/eMMC/applog/uuu3.log` |
+| `join` | `examples/directives/join/main.go` | `go run .\examples\directives\join [ssid password]` | Connect to Wi‑Fi; without args it uses the saved configuration |
+| `wifi_auto` | `examples/directives/wifi_auto/main.go` | `go run .\examples\directives\wifi_auto [0|1]` | Query or set Wi‑Fi auto-connect |
+| `ahttpbase` | `examples/directives/ahttpbase/main.go` | `go run .\examples\directives\ahttpbase [http-base-url]` | Query or set the file-service base URL |
+| `ainsp` | `examples/directives/ainsp/main.go` | `go run .\examples\directives\ainsp` | Read basic info from `/eMMC/applog/uuu2.log` |
+| `atime` | `examples/directives/atime/main.go` | `go run .\examples\directives\atime` | Read duration from `/eMMC/applog/uuu2.log` |
+| `adumj` | `examples/directives/adumj/main.go` | `go run .\examples\directives\adumj <logPath>` | Convert a device log into action JSON |
+| `aget` | `examples/directives/aget/main.go` | `go run .\examples\directives\aget <file-server-path>` | Pull a file from the file server into MKP |
+| `aput` | `examples/directives/aput/main.go` | `go run .\examples\directives\aput <mkp-file-path>` | Upload a file from MKP to the file server |
+| `ajson2log` | `examples/directives/ajson2log/main.go` | `go run .\examples\directives\ajson2log <jsonpath> <outputlogpath>` | Convert action JSON back into MKP log format |
+| `alog` | `examples/directives/alog/main.go` | `go run .\examples\directives\alog` | Start synchronous recording with `subdir1/test` |
+| `astop` | `examples/directives/astop/main.go` | `go run .\examples\directives\astop` | Stop the current recording |
+## Quick Overview
+
+| Directive | CLI Form | Description | Go API | Output / Parser |
+|---|---|---|---|---|
+| `alog` | `alog [logName] [options...]` | Start device-side recording; synchronous send can wait for recording output | `StartRecording` / `helper.StartRecord` / `helper.Alog` | Text, parser `RawDirective_alog` |
+| `aplay` | `aplay [logName] [--delay ms]` | Start replaying a recorded log | `StartReplaying` | No built-in parser; usually async |
+| `astop` | `astop` | Stop current recording | `StopRecording` / `Stop` / `helper.Astop` | Text, parser `RawDirective_astop` |
+| `acancel` | `acancel` | Cancel current replay task | `CancelReplay` / `helper.Cancel` | JSON parser exists, but wrapper sends async by default |
+| `sn` | `sn` | Get device serial number | `helper.DeviceSN` | JSON -> `SN` |
+| `list_dir` | `list_dir <path>` | List directory contents | `helper.ListDir` | JSON -> `FileSystem` |
+| `clean_dir` | `clean_dir <path>` | Clean a directory | `helper.CleanDir` | Empty on success; error on failure |
+| `delete_file` | `delete_file <path>` | Delete a file | `helper.DeleteFile` | Empty on success; error on failure |
+| `join` | `join [ssid password]` | Connect Wi-Fi; without args, use the most recently saved config | `helper.Join` / `Controller.Join` | Text parser `RawDirective_join`; success contains `connect: Connected` |
+| `wifi_auto` | `wifi_auto [0|1]` | Inspect or set Wi-Fi auto-connect state | `helper.WifiAuto` / `Controller.WifiAuto` | Text parser `RawDirective_wifi_auto`; query returns `on` / `off` |
+| `adumj` | `adumj <logPath>` | Dump a log file as readable JSON | `helper.Adumj` / `Controller.Adumj` | JSON -> `ActionDump`; EOF is `cli>`; successful output contains `<EOF>` |
+| `ahttpbase` | `ahttpbase [url]` | Inspect or set file-management API endpoint base URL | `helper.AHTTPBase` / `Controller.AHTTPBase` | JSON -> `AHTTPBase`; EOF is `cli>` |
+| `aget` | `aget <filepath>` | Download a file-server file to the corresponding MKP path | `helper.AUploadToMKP` / `Controller.AUploadToMKP` | Text; success contains `GET status=200` |
+| `aput` | `aput <filepath>` | Download/upload a MKP file to the corresponding file-server path | `helper.ADownloadFromMKP` / `Controller.ADownloadFromMKP` | Text; success contains `Upload OK` |
+| `ajson2log` | `ajson2log <jsonpath> -o <outputlogpath>` | Convert adumj JSON back to MKP log format | `helper.AJSON2Log` / `Controller.AJSON2Log` | Text; failures contain `error code` |
+| `alive` | `alive` | Heartbeat / liveness check | `helper.Alive` | JSON -> `Heartbeat` |
+| `atime` | `atime <path>` | Get log duration | `helper.Atime` | JSON -> `LogLength` |
+| `aversion` | `aversion` | Get firmware/application version | `helper.Aversion` | JSON -> `MKPVersion` |
+| `ainsp` | `ainsp <path>` | Inspect basic log metadata | `helper.AInspect` | JSON -> `LogInfo` |
+| `m10` | `m10 --port <port> [--b n] [--x n] [--y n] [--w n]` | Mouse control | `Mouse10` / `helper.M10` / controller mouse methods | No built-in parser; sync mode may ignore output |
+| `kpad` | `kpad --port <port> [--s hex] [--x1 hex]... [--rel n] [--d n] [--v 1]` | Keyboard control | `Keypad` / helper/controller keyboard methods | No built-in parser; sync mode may ignore output |
+
+## Synchronous and Asynchronous Sending
+
+### Low-Level Send APIs
+
+| API | Behavior |
+|---|---|
+| `SendDirective(directive[, opts...])` / `SendDirectiveContext(ctx, directive[, opts...])` / `SendSyncDirective(...)` | Synchronous send. If `SyncOuputEnabled=true`, it waits until `Read()` captures the command completion marker and returns raw output; optional `DirectiveOption` values override this wait. |
+| `SendDirectiveIgnoreOutput(directive[, opts...])` / `SendDirectiveIgnoreOutputContext(ctx, directive[, opts...])` | Synchronous send, but only waits for completion and returns no output; optional `DirectiveOption` values override this wait. |
+| `SendDirectiveAsync(directive)` / `SendDirectiveAsyncContext(ctx, directive)` | Asynchronous send. It writes the command and does not wait for output. |
+
+### EOF Markers
+
+- Registered commands use their parser's `EOFFlag()`.
+- Unregistered commands use CLI prompt `cli>` as the default completion marker.
+- Current constants:
+  - `EOFDefault = "<EOF>"`
+  - `EOFCLI = "cli>"`
+- `alog` synchronous matching is normalized to `alog`, because actual output may not start with the full CLI text.
+
+### Sync Output Timeout
+
+- The default timeout is controlled by `SFSerialPort.SyncOutputTimeout`; `NewSFSerialPort()` defaults it to `10 * time.Second`.
+- `SendDirective` / `SendDirectiveContext` / `SendSyncDirective` / `SendSyncDirectiveContext` accept optional `DirectiveOption` values, such as `WithSyncOutputTimeout(timeout)`, that only override the current synchronous wait.
+- If `WithSyncOutputTimeout` is omitted, the default `SyncOutputTimeout` is used.
+- `WithSyncOutputTimeout(0)` disables the timer for this wait, so only `context` cancellation can stop it.
+
+```go
+out, err := sfport.SendSyncDirective("join ssid password", mkpgo.WithSyncOutputTimeout(30*time.Second))
+out, err = sfport.SendDirectiveContext(ctx, "alive") // uses default SyncOutputTimeout
+```
+
+### Recommendations
+
+- For commands that return structured results, use synchronous helpers such as `helper.DeviceSN` and `helper.ListDir`.
+- Mouse/keyboard real-time control defaults to async (`M10Option.Async=true`, `KpadOption.Async=true`).
+- To enforce command ordering for mouse/keyboard operations, set `WithAsync(false)`; the current implementation waits for completion while ignoring output.
+
+## Recording and Replay Commands
+
+### `alog`
+
+**CLI:**
+
+```text
+alog [logName] [--width n] [--heigh n] [--stposx n] [--stposy n]
+```
+
+> `LogOption.CliArgs()` uses `--heigh` in the current code, not `--height`.
+
+**Options:**
+
+| Option | Description |
+|---|---|
+| `logName` | Log name; optional. The helper appends it as the first argument. |
+| `--width n` | Recording region width. Emitted when `LogOption.Width > 0`. |
+| `--heigh n` | Recording region height. Emitted when `LogOption.Height > 0`. |
+| `--stposx n` | Start X. Emitted when `LogOption.StPos.X > -1`. |
+| `--stposy n` | Start Y. Emitted when `LogOption.StPos.Y > -1`. |
+
+**Go API:**
+
+```go
+// Start recording asynchronously.
+err := sfport.StartRecording("demo")
+err = helper.StartRecord(sfport, "demo", opt)
+
+// Send alog synchronously and wait for output.
+out, err := helper.Alog(sfport, "demo", opt)
+```
+
+**Parser:** `RawDirective_alog`
+
+- Output type: text.
+- EOF marker: `cli>`.
+- Parsing behavior: removes `\r`, trims CLI prefix, returns text when non-empty; otherwise returns an empty string.
+
+### `aplay`
+
+**CLI:**
+
+```text
+aplay [logName] [--delay ms]
+```
+
+**Options:**
+
+| Option | Description |
+|---|---|
+| `logName` | Log name to replay. Not appended when empty. |
+| `--delay ms` | Replay delay. Appended when `delay >= 0`. |
+
+**Go API:**
+
+```go
+err := sfport.StartReplaying("demo", 0)
+err = sfport.StartReplayingContext(ctx, "demo", 100)
+```
+
+**Parser:** no built-in parser. `StartReplaying` sends asynchronously by default.
+
+### `astop`
+
+**CLI:**
+
+```text
+astop
+```
+
+**Go API:**
+
+```go
+err := sfport.StopRecording()
+err = sfport.Stop()
+err = helper.StopRecord(sfport)
+err = helper.Astop(sfport)
+```
+
+**Parser:** `RawDirective_astop`
+
+- Output type: text.
+- EOF marker: `cli>`.
+- Parsing behavior: returns text when non-empty; empty content is treated as `ErrRawDirectiveParseFailed`.
+
+### `acancel`
+
+**CLI:**
+
+```text
+acancel
+```
+
+**Go API:**
+
+```go
+err := sfport.CancelReplay()
+err = helper.Cancel(sfport)
+```
+
+**Parser:** `RawDirective_acancel`
+
+- Output type: JSON text.
+- EOF marker: `<EOF>`.
+- Note: `sfport.CancelReplay()` and `helper.Cancel()` currently send asynchronously and do not parse output. If output is required, call `SendDirective("acancel")` directly and then parse it with the registered parser.
+
+## Device, Network, and Filesystem Commands
+
+### `sn`
+
+**CLI:**
+
+```text
+sn
+```
+
+**Go API:**
+
+```go
+sn, err := helper.DeviceSN(sfport)
+fmt.Println(sn.SN)
+```
+
+**Output:** JSON -> `mkpgo.SN`
+
+```json
+{"sn":"..."}
+```
+
+### `list_dir`
+
+**CLI:**
+
+```text
+list_dir <path>
+```
+
+**Go API:**
+
+```go
+fs, err := helper.ListDir(sfport, "/eMMC/applog/mkpdemo")
+```
+
+**Output:** JSON -> `mkpgo.FileSystem`
+
+```json
+{
+  "rootDir": {
+    "name": "applog",
+    "path": "/eMMC/applog",
+    "type": "directory",
+    "size": 0,
+    "contents": []
+  },
+  "error": ""
+}
+```
+
+### `clean_dir`
+
+**CLI:**
+
+```text
+clean_dir <path>
+```
+
+**Go API:**
+
+```go
+err := helper.CleanDir(sfport, "/eMMC/applog/demo")
+```
+
+**Restrictions:**
+
+- `helper.CleanDir` requires `path` to start with `/eMMC/applog`; otherwise it returns `only can clean directory in working directory`.
+- Use `helper.ComposeLogDirctory(logDir)` to convert a relative directory to `/eMMC/applog/<logDir>`.
+
+**Parser:** `RawDirective_clean_dir`
+
+- Output type: text/empty.
+- EOF marker: `cli>`.
+- If output contains `Failed to`, the parser returns `failed to clean directory`.
+
+### `delete_file`
+
+**CLI:**
+
+```text
+delete_file <path>
+```
+
+**Go API:**
+
+```go
+err := helper.DeleteFile(sfport, "demo/record1")
+// helper converts it to /eMMC/applog/demo/record1.log
+```
+
+**Path rules:**
+
+- `helper.DeleteFile` calls `ComposeLogFullpath`:
+  - appends `.log` when missing;
+  - prepends `/eMMC/applog/` when the path does not already start with `/eMMC/applog/`.
+- The converted path must still start with `/eMMC/applog`.
+
+**Parser:** `RawDirective_delete_file`
+
+- Output type: text/empty.
+- EOF marker: `cli>`.
+- If output contains `Failed to remove`, the parser returns `failed to remove file`.
+
+### `join`
+
+**CLI:**
+
+```text
+join [ssid password]
+```
+
+Call forms:
+
+```text
+join wifi-name password
+join
+```
+
+- With `ssid` / `password`, the device attempts to connect to the specified Wi-Fi network.
+- Without arguments, the device uses the most recently saved Wi-Fi configuration.
+
+**Go API:**
+
+```go
+// Connect to a specified Wi-Fi network.
+out, err := helper.Join(sfport, &mkpgo.JoinOption{
+    SSID:     "ssid",
+    Password: "password1234",
+})
+
+// Use the most recently saved Wi-Fi configuration.
+out, err = helper.Join(sfport, nil)
+```
+
+`Controller` proxy:
+
+```go
+out, err := ctrl.Join(&mkpgo.JoinOption{SSID: "ssid", Password: "password1234"})
+out, err = ctrl.Join(nil)
+```
+
+**Parser:** `RawDirective_join`
+
+- Output type: text, not JSON.
+- EOF marker: `cli>`.
+- Success rule: output contains `connect: Connected`.
+- Failure rule: output containing `Command returned non-zero error code` / `error code` returns `ErrRawDirecitveExecutionFailed`.
+
+Successful output example:
+
+```text
+join ssid password1234
+I (29664) connect: Connecting to 'ssid'
+W (29664) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+I (31648) esp_netif_handlers: sta ip: 192.168.71.79, mask: 255.255.255.0, gw: 192.168.71.1
+I (31648) connect: Connected
+cli>
+```
+
+Failure output example:
+
+```text
+join ssid password1234
+I (8368) connect: Connecting to 'ssid'
+W (18376) connect: Connection timed out
+Command returned non-zero error code: 0x1 (ERROR)
+cli>
+```
+
+No-argument successful output example:
+
+```text
+join
+I (736848) connect: Connecting to ''
+ssid ChinaNet-9Wfg pass password1234
+W (736856) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2
+W (736856) wifi:sta is connected, disconnect before connecting to new ap
+I (736872) connect: Connected
+cli>
+```
+
+### `wifi_auto`
+
+**CLI:**
+
+```text
+wifi_auto [0|1]
+```
+
+Call forms:
+
+```text
+wifi_auto
+wifi_auto 1
+wifi_auto 0
+```
+
+- Without arguments, query the current auto-connect state.
+- `state == "1"` enables auto-connect on startup.
+- `state == "0"` disables auto-connect.
+
+**Go API:**
+
+```go
+// Query current state; returns "on" or "off".
+out, err := helper.WifiAuto(sfport, nil)
+
+// Enable auto-connect.
+out, err = helper.WifiAuto(sfport, &mkpgo.WifiAutoOption{State: "1"})
+
+// Disable auto-connect.
+out, err = helper.WifiAuto(sfport, &mkpgo.WifiAutoOption{State: "0"})
+```
+
+`Controller` proxy:
+
+```go
+out, err := ctrl.WifiAuto(nil)
+out, err = ctrl.WifiAuto(&mkpgo.WifiAutoOption{State: "1"})
+```
+
+**Parser:** `RawDirective_wifi_auto`
+
+- Output type: text, not JSON.
+- EOF marker: `cli>`.
+- Query success rule: output contains `auto: on` or `auto: off`; parser returns `"on"` / `"off"`.
+- Set success rule: `wifi_auto 1` / `wifi_auto 0` reaches `cli>` with empty output and returns an empty string with nil error.
+- Failure rule: output containing `Command returned non-zero error code` / `error code` returns `ErrRawDirecitveExecutionFailed`.
+
+Query output example:
+
+```text
+wifi_auto
+auto: on
+
+cli>
+```
+
+Set output examples:
+
+```text
+wifi_auto 1
+cli>
+```
+
+```text
+wifi_auto 0
+cli>
+```
+
+### `adumj`
+
+**CLI:**
+
+```text
+adumj <logPath>
+```
+
+**Go API:**
+
+```go
+dump, err := helper.Adumj(sfport, &mkpgo.AdumjOption{LogPath: "demo-log"})
+fmt.Println(dump.Format, dump.Version, len(dump.Events))
+```
+
+`Controller` proxy:
+
+```go
+dump, err := ctrl.Adumj(&mkpgo.AdumjOption{LogPath: "demo-log"})
+```
+
+**Parser:** `RawDirective_adumj`
+
+- Output type: JSON.
+- EOF marker: `cli>`; successful output may still contain a firmware `<EOF>` line after the JSON, and the parser strips it.
+- Failure detection: `PreFlight` turns `Command returned non-zero error code` into `ErrRawDirecitveExecutionFailed`.
+- The parser skips leading log lines and extracts JSON from the first `{` through the last `}`.
+
+Successful output example:
+
+```text
+adumj demo-log
+I (922627) alog: logfile /eMMC/applog/demo-log.log
+I (922635) alog: v2 format
+{
+  "format": "mkp-action-v1",
+  "version": "MKv2",
+  "meta": { "width": 1920, "height": 1080, "startX": 0, "startY": 0 },
+  "events": [
+    { "MouseMove": { "x": 1, "y": 2, "ts": 1064 } }
+  ]
+}
+<EOF>
+cli>
+```
+
+Failure output example:
+
+```text
+adumj missing-log
+E (1084411) alog: Failed to open file /eMMC/applog/missing-log.log
+Command returned non-zero error code: 0xffffffff (ESP_FAIL)
+cli>
+```
+
+### `aget`
+
+> `ahttpbase` must be configured correctly before using this command.
+
+**CLI:**
+
+```text
+aget <filepath>
+```
+
+For example, download/upload `{FILE_ROOT}/applog/path_to.log` from the file server to `/eMMC/applog/path_to.log` on MKP:
+
+```text
+aget applog/path_to.log
+```
+
+**Go API:**
+
+```go
+output, err := helper.AUploadToMKP(sfport, &mkpgo.AGetOption{FilePath: "applog/path_to.log"})
+fmt.Println(output)
+```
+
+`Controller` proxy:
+
+```go
+output, err := ctrl.AUploadToMKP(&mkpgo.AGetOption{FilePath: "applog/path_to.log"})
+```
+
+**Parser:** `RawDirective_aget`
+
+- Output type: non-JSON.
+- EOF marker: `cli>`.
+- Success detection: output contains `GET status=200`.
+- Failure detection: output contains `GET status=` but not `GET status=200`, or contains `Server returned status` / `Command returned non-zero error code`; parser returns `ErrRawDirecitveExecutionFailed`.
+
+Success output example:
+
+```text
+aget applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c.log
+Downloading http://192.168.71.6:8000/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c.log
+
+I (2925224) heh: HTTP_EVENT_ON_CONNECTED
+I (2925424) heh: HTTP_EVENT_ON_DATA, len=75
+I (2925424) heh: HTTP_EVENT_ON_FINISH
+I (2925424) httpfile: GET status=200, length=75
+Saved to /eMMC/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c.log (75 bytes)
+
+I (2925448) heh: HTTP_EVENT_DISCONNECTED
+cli>
+```
+
+Failure output example:
+
+```text
+aget applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c1.log
+Downloading http://192.168.71.6:8000/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c1.log
+
+I (2970784) heh: HTTP_EVENT_ON_CONNECTED
+I (2970792) heh: HTTP_EVENT_ON_DATA, len=76
+I (2970792) heh: HTTP_EVENT_ON_FINISH
+I (2970792) httpfile: GET status=404, length=76
+E (2970792) httpfile: Server returned status 404
+I (2970816) heh: HTTP_EVENT_DISCONNECTED
+cli>
+```
+### `aput`
+
+> `ahttpbase` must be configured correctly before using this command.
+
+**CLI:**
+
+```text
+aput <filepath>
+```
+
+For example, download/upload `/eMMC/applog/path_to.log` on MKP to `{FILE_ROOT}/applog/path_to.log` on the file server:
+
+```text
+aput applog/path_to.log
+```
+
+**Go API:**
+
+```go
+output, err := helper.ADownloadFromMKP(sfport, &mkpgo.APutOption{FilePath: "applog/path_to.log"})
+fmt.Println(output)
+```
+
+`Controller` proxy:
+
+```go
+output, err := ctrl.ADownloadFromMKP(&mkpgo.APutOption{FilePath: "applog/path_to.log"})
+```
+
+**Parser:** `RawDirective_aput`
+
+- Output type: non-JSON.
+- EOF marker: `cli>`.
+- Success detection: output contains `Upload OK`.
+- Failure detection: output contains `Upload FAILED` / `Failed to open file` / `Command returned non-zero error code`; parser returns `ErrRawDirecitveExecutionFailed`.
+
+Success output example:
+
+```text
+aput applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c.log
+Uploading /eMMC/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c.log -> http://192.168.71.6:8000/upload
+
+I (297931) httpfile: Upload OK (75 bytes) -> http://192.168.71.6:8000/upload
+Upload OK
+
+cli>
+```
+
+Failure output example:
+
+```text
+aput applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c111.log
+Uploading /eMMC/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c111.log -> http://192.168.71.6:8000/upload
+
+E (345995) httpfile: Failed to open file: /eMMC/applog/d6314ae1-728c-4fba-aaaa-3c4729c2e32c111.log
+Upload FAILED
+
+Command returned non-zero error code: 0xffffffff (ESP_FAIL)
+cli>
+```
+### `ajson2log`
+
+**CLI:**
+
+```text
+ajson2log <jsonpath> -o <outputlogpath>
+```
+
+Example:
+
+```text
+ajson2log jsons/aaaa.json -o jsons/aaaa.log
+```
+
+**Go API:**
+
+```go
+output, err := helper.AJSON2Log(sfport, &mkpgo.AJSON2LogOption{
+    JSONPath:      "jsons/aaaa.json",
+    OutputLogPath: "jsons/aaaa.log",
+})
+fmt.Println(output)
+```
+
+`Controller` proxy:
+
+```go
+output, err := ctrl.AJSON2Log(&mkpgo.AJSON2LogOption{
+    JSONPath:      "jsons/aaaa.json",
+    OutputLogPath: "jsons/aaaa.log",
+})
+```
+
+**Parser:** `RawDirective_ajson2log`
+
+- Output type: non-JSON.
+- EOF marker: `cli>`.
+- Success detection: if output does not contain `error code`, the parser returns the cleaned raw output.
+- Failure detection: output contains `Command returned non-zero error code` / `error code`; parser returns `ErrRawDirecitveExecutionFailed`.
+
+Success output example:
+
+```text
+ajson2log jsons/aaaa.json -o jsons/aaaa.log
+I (140523) ajson2log: Written /eMMC/applog/jsons/aaaa.log (version=MKv2, mouse=1, kbd=0)
+JSON -> log: /eMMC/applog/jsons/aaaa.log
+
+cli>
+```
+
+Failure output example:
+
+```text
+ajson2log jsons/aaaattt.json -o jsons/aaaa.log
+E (374939) ajson2log: Cannot open /eMMC/applog/jsons/aaaattt.json
+Command returned non-zero error code: 0xffffffff (ESP_FAIL)
+cli>
+```
+### `ahttpbase`
+
+**CLI:**
+
+```text
+ahttpbase [url]
+```
+
+**Go API:**
+
+```go
+base, err := helper.AHTTPBase(sfport, nil) // query
+base, err = helper.AHTTPBase(sfport, &mkpgo.AHTTPBaseOption{URL: "http://localhost:3000"}) // set
+fmt.Println(base.AHTTPBase)
+```
+
+`Controller` proxy:
+
+```go
+base, err := ctrl.AHTTPBase(&mkpgo.AHTTPBaseOption{URL: "http://localhost:3000"})
+```
+
+**Parser:** `RawDirective_ahttpbase`
+
+- Output type: JSON.
+- EOF marker: `cli>`.
+- Query success extracts the firmware JSON `{ "ahttpbase": "..." }`.
+- Set success returns `OK` from firmware; the parser synthesizes JSON from the URL argument so helpers can always unmarshal into `AHTTPBase`.
+- Failure detection: `PreFlight` turns `Command returned non-zero error code` into `ErrRawDirecitveExecutionFailed`.
+
+Query output example:
+
+```text
+ahttpbase
+W (954891) setupnvs: Error reading 'ahttpbase' from NVS: ESP_ERR_NVS_NOT_FOUND
+{ "ahttpbase": "" }
+
+<EOF>
+cli>
+```
+
+Set output example:
+
+```text
+ahttpbase http://localhost:3000
+OK
+
+cli>
+```
+### `alive`
+
+**CLI:**
+
+```text
+alive
+```
+
+**Go API:**
+
+```go
+hb, err := helper.Alive(sfport)
+fmt.Println(hb.Timetamp)
+```
+
+**Output:** JSON -> `mkpgo.Heartbeat`
+
+```json
+{"timetamp": 1234567890}
+```
+
+> The field name is `timetamp` in the current code/firmware payload.
+
+### `atime`
+
+**CLI:**
+
+```text
+atime <path>
+```
+
+**Go API:**
+
+```go
+length, err := helper.Atime(sfport, "demo/record1")
+length, err = helper.Atime(sfport, "/eMMC/applog/demo/record1.log")
+```
+
+**Path:** code comments indicate that both relative paths (optionally without `.log`, e.g. `mkpdemo/1129f40`) and absolute paths (e.g. `/eMMC/applog/mkpdemo/1129f40.log`) are supported.
+
+**Output:** JSON -> `mkpgo.LogLength`
+
+```json
+{"seconds": 1, "milsec": 230}
+```
+
+### `aversion`
+
+**CLI:**
+
+```text
+aversion
+```
+
+**Go API:**
+
+```go
+version, err := helper.Aversion(sfport)
+fmt.Println(version.UVersion, version.AVersion)
+```
+
+**Output:** JSON -> `mkpgo.MKPVersion`
+
+```json
+{"uver":"...", "aver":"..."}
+```
+
+### `ainsp`
+
+**CLI:**
+
+```text
+ainsp <path>
+```
+
+**Go API:**
+
+```go
+info, err := helper.AInspect(sfport, "demo/record1")
+info, err = helper.AInspect(sfport, "/eMMC/applog/demo/record1.log")
+```
+
+**Output:** JSON -> `mkpgo.LogInfo`, a combination of `LogOption` and `LogLength`:
+
+```json
+{
+  "width": 1920,
+  "heigh": 1080,
+  "stpos": {"x": 0, "y": 0},
+  "seconds": 1,
+  "milsec": 230
+}
+```
+
+## Mouse Command: `m10`
+
+### CLI
+
+```text
+m10 --port <port> [--b button] [--x dx] [--y dy] [--w wheel]
+```
+
+`SFSerialPort.Mouse10` always prefixes:
+
+```text
+m10 --port <sp.MousePortFlag> ...
+```
+
+Default `MousePortFlag = "1"`.
+
+### Options
+
+| Option | Source | Range / Description |
+|---|---|---|
+| `--port <port>` | `sp.MousePortFlag` | Mouse port flag, default `1`. |
+| `--b <button>` | `M10Option.Button` | Mouse button bitmask, lower 5 bits. |
+| `--x <dx>` | `M10Option.X` | Relative X movement. Code comment range: `-2048~2047`. |
+| `--y <dy>` | `M10Option.Y` | Relative Y movement. Code comment range: `-2048~2047`. |
+| `--w <wheel>` | `M10Option.Wheel` | Wheel delta. Code comment range: `-128~127`. |
+
+### Button Bitmask
+
+| Name | Value | Description |
+|---|---:|---|
+| `ReleaseMouseButton` | `0` | Release / no button |
+| `LeftMouseButton` | `1` | Left button |
+| `RightMouseButton` | `2` | Right button |
+| `BothLeftRightMouseButton` | `3` | Left + right buttons |
+| `MiddleMouseButton` | `4` | Middle button; code comment range `[4-7]` |
+| `BackMouseButton` | `8` | Back button; code comment range `[8-9]` |
+| `FowardMouseButton` | `16` | Forward button; code comment range `[16-31]` |
+
+### Go API
+
+```go
+// Default: async send.
+err := sfport.Mouse10(mkpgo.NewM10Option().SetX(100).SetY(0))
+
+// Press left button.
+err = sfport.Mouse10(mkpgo.NewM10Option().WithLeftButton())
+
+// Release all mouse buttons.
+err = sfport.MouseReleaseAll()
+
+// Synchronous send, wait for completion but ignore output.
+err = sfport.Mouse10(mkpgo.NewM10Option().SetX(10).WithAsync(false))
+// or:
+err = sfport.Mouse10(mkpgo.NewM10Option().SetX(10).WithSyncIgnoreOutput(true))
+```
+
+### `M10Option` builder methods
+
+| Method | Description |
+|---|---|
+| `NewM10Option()` | Create an option object; default `Async=true`. |
+| `SetButton(v)` / `WithButton(v)` | Set the button bitmask directly. |
+| `WithoutButton()` / `NoButton()` | Do not emit `--b`. |
+| `WithLeftButton()` | Set left button. |
+| `WithRightButton()` | Set right button. |
+| `WithBothLeftRightButton()` | Set left + right buttons. |
+| `WithMiddleButton()` | Set middle button. |
+| `WithBackButton()` | Set back button. |
+| `WithFowardButton()` | Set forward button. The code name uses `Foward`. |
+| `SetX(v)` | Set `--x`. |
+| `SetY(v)` | Set `--y`. |
+| `SetWheel(v)` | Set `--w`. |
+| `WithAsync(async)` | Control sync/async behavior; `false` is equivalent to sync-ignore-output mode. |
+| `WithSyncIgnoreOutput(syncIgnoreOutput)` | Control synchronous sending while ignoring output. |
+| `Reset()` | Clear Button/X/Y/Wheel fields. |
+| `ToString()` | Build the CLI argument fragment. |
+
+## Keyboard Command: `kpad`
+
+### CLI
+
+```text
+kpad --port <port> [--s status] [--x1 key] [--x2 key] [--x3 key] [--x4 key] [--x5 key] [--x6 key] [--rel n] [--d n] [--v 1]
+```
+
+`SFSerialPort.Keypad` always prefixes:
+
+```text
+kpad --port <sp.KeyboardPortFlag> ...
+```
+
+Default `KeyboardPortFlag = "2"`.
+
+### Options
+
+| Option | Source | Description |
+|---|---|---|
+| `--port <port>` | `sp.KeyboardPortFlag` | Keyboard port flag, default `2`. |
+| `--s <hex>` | `KpadOption.ModKeys.ToStatus()` | Modifier-key status byte, for example `0x01` for left Ctrl. |
+| `--x1` ~ `--x6` | `KpadOption.Keys[0..5]` | Up to 6 normal key scan codes. |
+| `--rel <n>` | `KpadOption.Release` | Release mode: `0` hold; `1` auto-release; `>1` duration in ms. |
+| `--d <n>` | `KpadOption.Delay` | Command delay value. Code comment says seconds; normal default is `0`. |
+| `--v 1` | `KpadOption.Verbose=true` | Enable verbose output. |
+
+### Modifier Keys
+
+| Name | Status bit |
+|---|---:|
+| `MOD_LCTRL` | `0x01` |
+| `MOD_LSHIFT` | `0x02` |
+| `MOD_LALT` | `0x04` |
+| `MOD_LMETA` | `0x08` |
+| `MOD_RCTRL` | `0x10` |
+| `MOD_RSHIFT` | `0x20` |
+| `MOD_RALT` | `0x40` |
+| `MOD_RMETA` | `0x80` |
+
+Supported short aliases: `LCTRL`, `LSHIFT`, `LALT`, `LMETA`, `RCTRL`, `RSHIFT`, `RALT`, `RMETA`.  
+Common generic aliases are normalized to left-side modifiers: `CTRL -> MOD_LCTRL`, `SHIFT -> MOD_LSHIFT`, `ALT -> MOD_LALT`, `META -> MOD_LMETA`.
+
+### Normal key names
+
+Normal key names are converted to HID scan codes through `KeyNameToHexCode`. The full mapping is in `types_keycode_maps.go`; categories include:
+
+- Basic keys: `NONE`, `ERR_OVF`, `A`~`Z`
+- Number keys: `1`~`0`
+- Control keys: `ENTER`, `ESC`, `BACKSPACE`, `TAB`, `SPACE`, etc.
+- Function keys: `F1`~`F24`
+- System/navigation keys: arrows, Insert/Delete/Home/End/PageUp/PageDown, etc.
+- Keypad keys: `KP*` series
+- Special function keys, application control keys, international keyboard keys, independent left/right control keys, and media control keys
+
+Printable symbols are expanded by `KeyDown` / `KeyUp` helper logic. Examples:
+
+| Input | Expansion |
+|---|---|
+| `!` | `MOD_LSHIFT` + `1` |
+| `@` | `MOD_LSHIFT` + `2` |
+| `_` | `MOD_LSHIFT` + `MINUS` |
+| `+` | `MOD_LSHIFT` + `EQUAL` |
+| space | `SPACE` |
+| `[` / `]` | `LEFTBRACE` / `RIGHTBRACE` |
+
+### Go API
+
+```go
+// Tap A once with auto release.
+err := sfport.Keypad(mkpgo.NewKpadOption().WithKeys([]string{"A"}).WithAutoRelease())
+
+// Hold W.
+err = sfport.Keypad(mkpgo.NewKpadOption().WithKeys([]string{"W"}).WithHold())
+
+// Ctrl + C.
+err = sfport.Keypad(mkpgo.NewKpadOption().WithKeys([]string{"CTRL", "C"}).WithAutoRelease())
+
+// Release current slots.
+err = sfport.Keypad(mkpgo.HidKpadRelease)
+
+// Full release.
+err = sfport.Keypad(mkpgo.HidKpadReleaseAll)
+```
+
+### `KpadOption` builder methods
+
+| Method | Description |
+|---|---|
+| `NewKpadOption()` | Create an option object; defaults: `Release=0`, `Delay=0`, `Verbose=false`, `Async=true`. |
+| `WithKeys(keys)` | Set up to 6 keys; automatically splits modifier keys and normal keys. |
+| `WithKey(key)` | Put one key into the first key slot. |
+| `WithModKeys(modKeys)` | Set modifier-key collection directly. |
+| `WithDelay(delay)` | Set `--d`. |
+| `WithRelease(release)` | Set `--rel` directly. |
+| `WithHold()` | Set `Release=0`, meaning hold. |
+| `WithAutoRelease()` | Set `Release=1`, meaning auto-release. |
+| `WithDuration(duration)` | If `duration > 1`, set `Release=duration`. |
+| `WithVerbose(verbose)` | Control `--v 1`. |
+| `WithAsync(async)` | Control sync/async behavior; `false` is equivalent to sync-ignore-output mode. |
+| `WithSyncIgnoreOutput(syncIgnoreOutput)` | Control synchronous sending while ignoring output. |
+| `KeyDown(key)` | Build a hold packet from the current local cache plus the newly pressed key; commit cache after successful send. |
+| `KeyUp(key)` | Build two packets: one to release the target key and one to keep remaining keys held. |
+| `ToString()` | Build the CLI argument fragment. |
+
+### Preset release options
+
+| Variable | Equivalent configuration | Description |
+|---|---|---|
+| `mkpgo.HidKpadRelease` | `NewKpadOption().WithDelay(0).WithKey("NONE")` | Release current key slots to `NONE`. |
+| `mkpgo.HidKpadReleaseAll` | `NewKpadOption().WithDelay(0).WithRelease(0)` | Send a full keyboard release packet. |
+
+## Output Parser Index
+
+| Command | Parser | JSON | EOF | Parsed result |
+|---|---|---:|---|---|
+| `alog` | `RawDirective_alog` | No | `cli>` | Text; may be empty. |
+| `astop` | `RawDirective_astop` | No | `cli>` | Text; empty content is treated as parse failure. |
+| `acancel` | `RawDirective_acancel` | Yes | `<EOF>` | JSON text; empty content is treated as parse failure. |
+| `sn` | `RawDirective_sn` | Yes | `<EOF>` | JSON text -> `SN`. |
+| `list_dir` | `RawDirective_list_dir` | Yes | `<EOF>` | JSON text -> `FileSystem`; empty content returns an empty string. |
+| `clean_dir` | `RawDirective_clean_dir` | No | `cli>` | Empty on success; output containing `Failed to` returns an error. |
+| `delete_file` | `RawDirective_delete_file` | No | `cli>` | Empty on success; output containing `Failed to remove` returns an error. |
+| `join` | `RawDirective_join` | No | `cli>` | Text; success must contain `connect: Connected`; error-code output returns execution failure. |
+| `wifi_auto` | `RawDirective_wifi_auto` | No | `cli>` | Text; query returns `on` / `off`; successful set returns an empty string. |
+| `adumj` | `RawDirective_adumj` | Yes | `cli>` | Extracts JSON text -> `ActionDump`; the `<EOF>` line in successful output is stripped as content. |
+| `ahttpbase` | `RawDirective_ahttpbase` | Yes | `cli>` | Query extracts JSON -> `AHTTPBase`; successful set `OK` is synthesized as JSON. |
+| `aget` | `RawDirective_aget` | No | `cli>` | Text; success contains `GET status=200`; non-200 status returns execution failure. |
+| `aput` | `RawDirective_aput` | No | `cli>` | Text; success contains `Upload OK`; failure output returns execution failure. |
+| `ajson2log` | `RawDirective_ajson2log` | No | `cli>` | Text; no `error code` means success; failure output returns execution failure. |
+| `alive` | `RawDirective_alive` | Yes | `<EOF>` | JSON text -> `Heartbeat`. |
+| `atime` | `RawDirective_atime` | Yes | `<EOF>` | Finds a JSON line containing `"seconds"` -> `LogLength`. |
+| `aversion` | `RawDirective_aversion` | Yes | `<EOF>` | JSON text -> `MKPVersion`. |
+| `ainsp` | `RawDirective_ainsp` | Yes | `<EOF>` | Finds a JSON line containing both `"seconds"` and `"width"` -> `LogInfo`. |
+| `aplay` | None | - | default `cli>` | API sends async by default. |
+| `m10` | None | - | default `cli>` | Sync mode usually ignores output. |
+| `kpad` | None | - | default `cli>` | Sync mode usually ignores output. |
+
+Common error rule: all parsers run `PreFlight` first. If output contains `command returned non-zero error code` case-insensitively, the parser returns `ErrRawDirecitveExecutionFailed`.
+
+## Response Model Index
+
+```go
+type SN struct {
+    SN string `json:"sn"`
+}
+
+type FileSystem struct {
+    RootDir FileNode `json:"rootDir,omitempty"`
+    Error   string   `json:"error,omitempty"`
+}
+
+type FileNode struct {
+    DisplayName string     `json:"displayName,omitempty"`
+    Name        string     `json:"name"`
+    Path        string     `json:"path"`
+    Type        string     `json:"type"` // directory/file
+    Size        int        `json:"size"`
+    Contents    []FileNode `json:"contents,omitempty"`
+}
+
+type Heartbeat struct {
+    Timetamp int64 `json:"timetamp"`
+}
+
+type LogLength struct {
+    Seconds      int `json:"seconds"`
+    Milliseconds int `json:"milsec"`
+}
+
+type MKPVersion struct {
+    UVersion string `json:"uver"`
+    AVersion string `json:"aver"`
+}
+
+type LogOption struct {
+    Width  int `json:"width"`
+    Height int `json:"heigh"`
+    StPos  struct {
+        X int `json:"x"`
+        Y int `json:"y"`
+    } `json:"stpos"`
+}
+
+type JoinOption struct {
+    SSID     string `json:"ssid"`
+    Password string `json:"password"`
+}
+
+type WifiAutoOption struct {
+    State string `json:"state"`
+}
+
+type AGetOption struct {
+    FilePath string `json:"filepath"`
+}
+
+type APutOption struct {
+    FilePath string `json:"filepath"`
+}
+
+type AJSON2LogOption struct {
+    JSONPath      string `json:"jsonpath"`
+    OutputLogPath string `json:"outputlogpath"`
+}
+
+type AHTTPBaseOption struct {
+    URL string `json:"url"`
+}
+
+type AHTTPBase struct {
+    AHTTPBase string `json:"ahttpbase"`
+}
+
+type AdumjOption struct {
+    LogPath string `json:"logPath"`
+}
+
+type ActionDump struct {
+    Format  string                       `json:"format"`
+    Version string                       `json:"version"`
+    Meta    ActionDumpMeta               `json:"meta"`
+    Events  []map[string]json.RawMessage `json:"events"`
+}
+
+type ActionDumpMeta struct {
+    Width  int `json:"width"`
+    Height int `json:"height"`
+    StartX int `json:"startX"`
+    StartY int `json:"startY"`
+}
+
+type LogInfo struct {
+    LogOption
+    LogLength
+}
+```
+
+## Go API Index
+
+### `SFSerialPort` Directive Methods
+
+| Method | Directive | Description |
+|---|---|---|
+| `SendDirective` / `SendDirectiveContext` / `SendSyncDirective` / `SendSyncDirectiveContext` | Any | Synchronously send and return raw output; optional `DirectiveOption` values override this wait. |
+| `SendDirectiveIgnoreOutput` / `SendDirectiveIgnoreOutputContext` | Any | Synchronously send, wait for completion, and ignore output; optional `DirectiveOption` values override this wait. |
+| `SendDirectiveAsync` / `SendDirectiveAsyncContext` | Any | Send asynchronously. |
+| `StartRecording` / `StartRecordingContext` | `alog` | Start recording asynchronously. |
+| `StartReplaying` / `StartReplayingContext` | `aplay` | Start replay asynchronously. |
+| `StopRecording` / `StopRecordingContext` | `astop` | Stop recording asynchronously. |
+| `Stop` / `StopContext` | `astop` | Alias of `StopRecording`. |
+| `CancelReplay` / `CancelReplayContext` | `acancel` | Cancel replay asynchronously. |
+| `Mouse10` / `Mouse10Context` | `m10` | Send a mouse command; `Async=false` waits synchronously and ignores output. |
+| `MouseReleaseAll` / `MouseReleaseAllContext` | `m10 --b 0` | Release all mouse buttons. |
+| `Keypad` / `KeypadContext` | `kpad` | Send a keyboard command; `Async=false` waits synchronously and ignores output. |
+
+### `helper` Package Methods
+
+Sync-output helpers such as `Alog`, `Astop`, `Join`, `WifiAuto`, `AUploadToMKP`, `ADownloadFromMKP`, `AJSON2Log`, `AHTTPBase`, `Adumj`, `DeviceSN`, `ListDir`, `CleanDir`, `DeleteFile`, `Alive`, `Atime`, `Aversion`, and `AInspect` all accept optional `mkpgo.DirectiveOption` values; use `mkpgo.WithSyncOutputTimeout(...)` to override the timeout for one wait.
+
+| Method | Directive | Return |
+|---|---|---|
+| `StartRecord` / `StartRecordContext` | `alog` | `error` |
+| `Alog` / `AlogContext` | `alog` | `string, error` |
+| `StopRecord` / `StopRecordContext` | `astop` | `error` |
+| `Astop` / `AstopContext` | `astop` | `error` |
+| `Cancel` / `CancelContext` | `acancel` | `error` |
+| `DeviceSN` / `DeviceSNContext` | `sn` | `*SN, error` |
+| `ListDir` / `ListDirContext` | `list_dir` | `*FileSystem, error` |
+| `CleanDir` / `CleanDirContext` | `clean_dir` | `error` |
+| `DeleteFile` / `DeleteFileContext` | `delete_file` | `error` |
+| `Join` / `JoinContext` | `join` | `string, error` |
+| `WifiAuto` / `WifiAutoContext` | `wifi_auto` | `string, error` |
+| `AUploadToMKP` / `AUploadToMKPContext` | `aget` | `string, error` |
+| `ADownloadFromMKP` / `ADownloadFromMKPContext` | `aput` | `string, error` |
+| `AJSON2Log` / `AJSON2LogContext` | `ajson2log` | `string, error` |
+| `AHTTPBase` / `AHTTPBaseContext` | `ahttpbase` | `*AHTTPBase, error` |
+| `Adumj` / `AdumjContext` | `adumj` | `*ActionDump, error` |
+| `Alive` / `AliveContext` | `alive` | `*Heartbeat, error` |
+| `Atime` / `AtimeContext` | `atime` | `*LogLength, error` |
+| `Aversion` / `AversionContext` | `aversion` | `*MKPVersion, error` |
+| `AInspect` / `AInspectContext` | `ainsp` | `*LogInfo, error` |
+| `KeyDown` / `KeyDownContext` | `kpad` | `error` |
+| `KeyUp` / `KeyUpContext` | `kpad` | `error` |
+| `KeyTap` / `KeyTapContext` | `kpad` | `error` |
+| `KeyPresses` / `KeyPressesContext` | `kpad` | `error` |
+| `KeypadRelease` / `KeypadReleaseContext` | `kpad` | `error` |
+| `KeypadReleaseAll` / `KeypadReleaseAllContext` | `kpad` | `error` |
+| `MouseReleaseAll` / `MouseReleaseAllContext` | `m10` | `error` |
+| `M10` | `m10` | `error` |
+
+### `controller.Controller` Common Proxies
+
+Matching sync-output proxy methods on `Controller` also accept optional `mkpgo.DirectiveOption` values.
+
+`controller.Controller` wraps helper functions and higher-level keyboard/mouse operations:
+
+- Recording/replay: `StartRecord`, `StopRecord`, `Alog`, `Astop`, `Cancel`
+- Device/files/network: `DeviceSN`, `ListDir`, `CleanDir`, `DeleteFile`, `Join`, `WifiAuto`, `AUploadToMKP`, `ADownloadFromMKP`, `AJSON2Log`, `AHTTPBase`, `Adumj`, `Alive`, `Atime`, `Aversion`, `AInspect`
+- Keyboard: `KeyDown`, `KeyUp`, `KeyTap`, `KeyPresses`, `KeypadRelease`, `KeypadReleaseAll`
+- Mouse: `MouseClick`, `MouseClickWithOption`, `MouseScroll`, `MouseScrollWithOption`, `MouseScrollWithButton`, `MouseDown`, `MouseReleaseAll`, `MouseUp`, `M10Move`, `MouseMove`
+
+## Draft / Unwrapped Commands
+
+`mmm/mkp_directive260417.md` records two proposed commands. They currently have no registered parser and no formal Go wrapper in the main code.
+
+### `apause`
+
+Suggested behavior: pause the log currently being replayed.
+
+Suggested parameters:
+
+1. `logName`: optional. Empty means the currently replaying log.
+2. `paused_at`: optional. Pause at a specified timestamp, for example `1.22 s`. If firmware-side implementation is inconvenient, pause immediately when the command is received.
+
+Note: save keyboard/mouse states at pause time so that resume can restore them.
+
+### `aresume`
+
+Suggested behavior: resume log replay.
+
+Suggested parameters:
+
+1. `logName`: optional. Empty means the currently replaying log.
+2. `useStates`: `1/0`; default `1`. `1` means use states saved by `apause` before resuming; `0` means resume directly.
+
+Note: states saved by `apause` should be cleared after `alog`, `astop`, `acancel`, or `aresume`.
+
+
+
