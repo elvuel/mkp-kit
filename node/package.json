@@ -1,0 +1,48 @@
+{
+  "name": "@elvuel/mkp-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "bin": {
+    "mkp": "./dist/src/bin/mkp.js",
+    "mkp-server": "./dist/src/bin/mkp-server.js",
+    "mkp-converter": "./dist/src/bin/converter.js",
+    "mkp-file-server": "./dist/src/bin/file-server.js",
+    "mkp-json2log": "./dist/src/bin/json2log.js",
+    "mkp-log2json": "./dist/src/bin/log2json.js",
+    "mkp-client": "./dist/src/bin/mkp-client.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "tool:converter": "npm run build && node dist/src/bin/converter.js --help",
+    "tool:file-server": "npm run build && node dist/src/bin/file-server.js --help",
+    "tool:log2json": "npm run build && node dist/src/bin/log2json.js --help",
+    "tool:json2log": "npm run build && node dist/src/bin/json2log.js --help",
+    "example:m10": "npm run build && node dist/examples/m10.js",
+    "example:kpad": "npm run build && node dist/examples/kpad.js",
+    "example:m10:device": "npm run build && node dist/examples/m10_device.js",
+    "example:kpad:device": "npm run build && node dist/examples/kpad_device.js",
+    "example:keys": "npm run build && node dist/examples/keys.js",
+    "example:context": "npm run build && node dist/examples/context.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0"
+  }
+}
