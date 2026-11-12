@@ -4,7 +4,7 @@
 
 ---
 
-`mkp-kit` is the monorepo for the MKP device SDK, maintained across Go, Python, and Rust.
+`mkp-kit` is the monorepo for the MKP device SDK, maintained across Go, Python, Rust, Node.js, and C++.
 
 ## What is MKP?
 
@@ -16,11 +16,11 @@ A typical flow looks like this:
 Host program -> serial port -> MKP device / firmware -> USB HID mouse / keyboard events -> target system
 ```
 
-All three language ports therefore share the same device protocol, the same directive semantics, and the same device-side recording / replay / file-management capabilities.
+All five language ports therefore share the same device protocol, the same directive semantics, and the same device-side recording / replay / file-management capabilities.
 
 ## Monorepo Positioning
 
-`mkp-kit` no longer treats Go, Python, and Rust as unrelated repositories. It treats them as **three language implementations of one SDK product**.
+`mkp-kit` no longer treats Go, Python, Rust, Node.js, and C++ as unrelated repositories. It treats them as **five language implementations of one SDK product**.
 
 The following should therefore be maintained as cross-language concerns by default:
 
@@ -49,6 +49,8 @@ For shared directive semantics, use [`directives.en.md`](./directives.en.md).
 - `go/`: Go SDK, helpers, controller, examples, and language-specific supplement docs
 - `python/`: Python SDK, server, CLI, converter, file server, examples, and language-specific supplement docs
 - `rust/`: Rust SDK, server, CLI, converter, file server, examples, and language-specific supplement docs
+- `node/`: Node.js SDK, server, CLI, converter, file server, examples, and language-specific supplement docs
+- `cpp/`: C++ SDK, helpers, controller, server, converter, file server, examples, and language-specific supplement docs
 - `docs/`: repo-level governance, research, and maintenance notes
 
 ## Documentation Strategy
@@ -76,18 +78,24 @@ In practice, this means:
 - Go: `go/README.md`
 - Python: `python/README.md`
 - Rust: `rust/README.md`
+- Node.js: `node/README.md`
+- C++: `cpp/README.md`
 
 Language-specific directive supplements:
 
 - Go: `go/directives.en.md`
 - Python: `python/directives.en.md`
 - Rust: `rust/directives.en.md`
+- Node.js: `node/directives.en.md`
+- C++: `cpp/directives.en.md`
 
 ## Directory Mapping
 
 - former `mkp-go` -> `go/`
 - former `mkp-python` -> `python/`
 - former `mkp-rust` -> `rust/`
+- Node.js implementation added natively inside the monorepo -> `node/`
+- C++ implementation added natively inside the monorepo -> `cpp/`
 
 ## History
 
@@ -96,3 +104,6 @@ This merge keeps the existing Git histories by importing each project with subtr
 - `go/` <- `mkp-go`
 - `python/` <- `mkp-python`
 - `rust/` <- `mkp-rust`
+
+`node/` and `cpp/` currently continue to evolve directly inside the `mkp-kit` monorepo.
+

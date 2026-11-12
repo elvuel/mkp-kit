@@ -4,7 +4,7 @@
 
 ---
 
-`mkp-kit` 是 MKP 设备 SDK 的 monorepo，统一维护 Go、Python、Rust 三个语言实现。
+`mkp-kit` 是 MKP 设备 SDK 的 monorepo，统一维护 Go、Python、Rust、Node.js、C++ 五个语言实现。
 
 ## MKP 是什么？
 
@@ -16,11 +16,11 @@
 上位机程序 -> 串口 -> MKP 设备 / 固件 -> USB HID 鼠标 / 键盘事件 -> 目标系统
 ```
 
-也就是说，三个语言端口共享的是同一套设备协议、同一批 directive 语义、以及同一组设备侧录制 / 回放 / 文件管理能力。
+也就是说，五个语言端口共享的是同一套设备协议、同一批 directive 语义、以及同一组设备侧录制 / 回放 / 文件管理能力。
 
 ## Monorepo 定位
 
-`mkp-kit` 不再把 Go、Python、Rust 视为三个互不相关的仓库，而是把它们视为 **同一 SDK 产品的三种语言实现**。
+`mkp-kit` 不再把 Go、Python、Rust、Node.js、C++ 视为多个互不相关的仓库，而是把它们视为 **同一 SDK 产品的五种语言实现**。
 
 因此，以下内容默认按跨语言能力统一维护：
 
@@ -49,6 +49,8 @@
 - `go/`：Go 版 SDK / helper / controller / examples / 语言补充文档
 - `python/`：Python 版 SDK / server / CLI / converter / file server / 语言补充文档
 - `rust/`：Rust 版 SDK / server / CLI / converter / file server / 语言补充文档
+- `node/`：Node.js 版 SDK / server / CLI / converter / file server / 语言补充文档
+- `cpp/`：C++ 版 SDK / helper / controller / server / converter / file server / 语言补充文档
 - `docs/`：仓库级治理、研究、维护说明等补充文档
 
 ## 文档维护策略
@@ -76,18 +78,24 @@
 - Go：`go/README.md`
 - Python：`python/README.md`
 - Rust：`rust/README.md`
+- Node.js：`node/README.md`
+- C++：`cpp/README.md`
 
 语言补充版 directive 说明：
 
 - Go：`go/directives.md`
 - Python：`python/directives.md`
 - Rust：`rust/directives.md`
+- Node.js：`node/directives.md`
+- C++：`cpp/directives.md`
 
 ## 目录映射
 
 - 原 `mkp-go` -> `go/`
 - 原 `mkp-python` -> `python/`
 - 原 `mkp-rust` -> `rust/`
+- monorepo 内新增 Node.js 实现 -> `node/`
+- monorepo 内新增 C++ 实现 -> `cpp/`
 
 ## 历史说明
 
@@ -96,3 +104,6 @@
 - `go/` <- `mkp-go`
 - `python/` <- `mkp-python`
 - `rust/` <- `mkp-rust`
+
+`node/` 与 `cpp/` 当前在 `mkp-kit` monorepo 中继续演进。
+
