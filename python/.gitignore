@@ -1,0 +1,17 @@
+.venv/
+venv/
+env/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+pip-wheel-metadata/
+*.pyc
+*.pyo
+*.egg-info/
+mkp.db
