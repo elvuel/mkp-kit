@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mkp-python"
+version = "0.1.0"
+description = "Python port of the mkp-go MKP serial SDK, API server, and CLI"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "OpenAI Codex" }]
+dependencies = [
+  "pyserial>=3.5",
+  "fastapi>=0.116.0",
+  "uvicorn>=0.35.0",
+  "sqlalchemy>=2.0.40",
+  "PyJWT>=2.10.1",
+  "httpx>=0.28.1",
+  "typer>=0.16.1",
+  "python-multipart>=0.0.20",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.3.5"]
+
+[project.scripts]
+mkp = "mkp_python.cli:main"
+mkp-server = "mkp_python.server:main"
+mkp-converter = "mkp_python.converter_cli:main"
+mkp-json2log = "mkp_python.converter_cli:main_json2log"
+mkp-log2json = "mkp_python.converter_cli:main_log2json"
+mkp-file-server = "mkp_python.file_server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
