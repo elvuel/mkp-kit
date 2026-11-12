@@ -54,8 +54,10 @@ See [directives.en.md](./directives.en.md) for the full directive guide.
 
 ## Installation
 
+Within the `mkp-kit` monorepo, the Python implementation lives in the `python/` subdirectory.
+
 ```powershell
-cd D:\projects\mkp-python
+cd D:\projects\mkp-kit\python
 python -m venv .venv
 . .\.venv\Scripts\Activate.ps1
 pip install -e .[dev]
@@ -95,7 +97,7 @@ For synchronous output parsing, make sure:
 
 ## Examples
 
-The table below uses the same format across languages: source path, run command, and observed behavior.
+The table below uses the same format across languages: source path, run command, and observed behavior. Paths and commands are relative to `mkp-kit/python/`.
 
 | Example | Source path | Run command | Behavior |
 |---|---|---|---|
@@ -258,6 +260,8 @@ Each debug file may include:
 This is Python-port-specific troubleshooting support for unstable device responses.
 
 ## Repository Layout
+
+All paths below are relative to `mkp-kit/python/`.
 
 - `src/mkp_python/sdk.py`: serial port, helpers, `Controller`
 - `src/mkp_python/models.py`: option and response dataclasses

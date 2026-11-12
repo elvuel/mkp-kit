@@ -54,8 +54,10 @@ Python 程序 -> 串口 -> MKP 设备 / 固件 -> USB HID 鼠标 / 键盘事件 
 
 ## 安装
 
+在 `mkp-kit` monorepo 中，Python 实现位于 `python/` 子目录。
+
 ```powershell
-cd D:\projects\mkp-python
+cd D:\projects\mkp-kit\python
 python -m venv .venv
 . .\.venv\Scripts\Activate.ps1
 pip install -e .[dev]
@@ -95,7 +97,7 @@ finally:
 
 ## 示例
 
-下表按“源码路径 / 运行命令 / 示例行为”整理 Python 版示例。
+下表按“源码路径 / 运行命令 / 示例行为”整理 Python 版示例；以下路径与命令均相对于 `mkp-kit/python/`。
 
 | 示例 | 源码路径 | 运行命令 | 示例行为 |
 |---|---|---|---|
@@ -258,6 +260,8 @@ mkp-file-server --root .\file_root --port 8080
 这部分是 Python 版针对设备返回不稳定场景增加的排障能力。
 
 ## 仓库结构
+
+以下路径均相对于 `mkp-kit/python/`。
 
 - `src/mkp_python/sdk.py`：串口、helper、`Controller`
 - `src/mkp_python/models.py`：各类 option / response dataclass

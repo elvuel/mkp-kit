@@ -53,6 +53,8 @@ See the full command reference in [`directives.en.md`](./directives.en.md).
 
 ## Installation
 
+Within the `mkp-kit` monorepo, the Rust implementation lives in the `rust/` subdirectory.
+
 Recommended setup:
 
 - Rust stable toolchain
@@ -62,7 +64,7 @@ Recommended setup:
 Common setup commands:
 
 ```powershell
-cd D:\projects\mkp-rust
+cd D:\projects\mkp-kit\rust
 $env:Path = "$env:USERPROFILE\.cargo\bin;" + $env:Path
 cargo test
 cargo check --examples --bins
@@ -103,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Examples
 
-The table below uses the same format across languages: source path, run command, and observed behavior.
+The table below uses the same format across languages: source path, run command, and observed behavior. Paths and commands are relative to `mkp-kit/rust/`.
 
 | Example | Source path | Run command | Behavior |
 |---|---|---|---|
@@ -205,6 +207,8 @@ CLI defaults:
 - If an authenticated request has no stored token but has saved username / password, the CLI auto-logins and persists the token
 
 ## Repository Layout
+
+All paths below are relative to `mkp-kit/rust/`.
 
 | Path | Description |
 |---|---|

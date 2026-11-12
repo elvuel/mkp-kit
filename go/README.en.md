@@ -50,11 +50,13 @@ This model is useful when you need:
 
 ## Installation
 
+Within the `mkp-kit` monorepo, the Go implementation lives in the `go/` subdirectory.
+
 ```bash
 go get github.com/elvuel/mkp-go
 ```
 
-The current `go.mod` declares:
+The `go/go.mod` file currently declares:
 
 ```text
 go 1.25.0
@@ -95,7 +97,7 @@ func main() {
 
 ## Examples
 
-The table below uses the same format across languages: source path, run command, and observed behavior.
+The table below uses the same format across languages: source path, run command, and observed behavior. Paths and commands are relative to `mkp-kit/go/`.
 
 | Example | Source path | Run command | Behavior |
 |---|---|---|---|
@@ -160,6 +162,8 @@ mkp-go supports three send modes:
 | Async | `SendDirectiveAsync` | Write to the serial port without waiting; useful for high-frequency input events. |
 
 ## Repository Layout
+
+All paths below are relative to `mkp-kit/go/`.
 
 | Path | Description |
 |---|---|

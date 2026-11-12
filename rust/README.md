@@ -53,6 +53,8 @@ Rust 程序 -> 串口 -> MKP 设备 / 固件 -> USB HID 鼠标 / 键盘事件 ->
 
 ## 安装
 
+在 `mkp-kit` monorepo 中，Rust 实现位于 `rust/` 子目录。
+
 建议环境：
 
 - Rust stable toolchain
@@ -62,7 +64,7 @@ Rust 程序 -> 串口 -> MKP 设备 / 固件 -> USB HID 鼠标 / 键盘事件 ->
 常用准备命令：
 
 ```powershell
-cd D:\projects\mkp-rust
+cd D:\projects\mkp-kit\rust
 $env:Path = "$env:USERPROFILE\.cargo\bin;" + $env:Path
 cargo test
 cargo check --examples --bins
@@ -103,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## 示例
 
-下表按“源码路径 / 运行命令 / 示例行为”整理 Rust 版示例。
+下表按“源码路径 / 运行命令 / 示例行为”整理 Rust 版示例；以下路径与命令均相对于 `mkp-kit/rust/`。
 
 | 示例 | 源码路径 | 运行命令 | 示例行为 |
 |---|---|---|---|
@@ -205,6 +207,8 @@ CLI 默认行为：
 - 若请求需要鉴权且本地仅保存了用户名 / 密码，则会自动换取并缓存 token
 
 ## 仓库结构
+
+以下路径均相对于 `mkp-kit/rust/`。
 
 | 路径 | 说明 |
 |---|---|
