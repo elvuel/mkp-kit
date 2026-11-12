@@ -1,0 +1,80 @@
+[package]
+name = "mkp-rust"
+version = "0.1.0"
+edition = "2024"
+description = "Rust port foundation for the MKP serial SDK"
+
+[dependencies]
+axum = { version = "0.8", features = ["json", "multipart"] }
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+dirs = "6.0"
+jsonwebtoken = { version = "10.4", features = ["rust_crypto"] }
+once_cell = "1.21"
+regex = "1.12"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serialport = "4.8"
+thiserror = "2.0"
+tokio = { version = "1.47", features = ["macros", "rt-multi-thread", "net", "time"] }
+uuid = { version = "1.18", features = ["v4"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tempfile = "3.20"
+tower = { version = "0.5", features = ["util"] }
+
+[[example]]
+name = "adumj"
+path = "examples/directives/adumj/main.rs"
+[[example]]
+name = "aget"
+path = "examples/directives/aget/main.rs"
+[[example]]
+name = "ahttpbase"
+path = "examples/directives/ahttpbase/main.rs"
+[[example]]
+name = "ainsp"
+path = "examples/directives/ainsp/main.rs"
+[[example]]
+name = "ajson2log"
+path = "examples/directives/ajson2log/main.rs"
+[[example]]
+name = "alive"
+path = "examples/directives/alive/main.rs"
+[[example]]
+name = "alog"
+path = "examples/directives/alog/main.rs"
+[[example]]
+name = "aput"
+path = "examples/directives/aput/main.rs"
+[[example]]
+name = "astop"
+path = "examples/directives/astop/main.rs"
+[[example]]
+name = "atime"
+path = "examples/directives/atime/main.rs"
+[[example]]
+name = "aversion"
+path = "examples/directives/aversion/main.rs"
+[[example]]
+name = "clean_dir"
+path = "examples/directives/clean_dir/main.rs"
+[[example]]
+name = "delete_file"
+path = "examples/directives/delete_file/main.rs"
+[[example]]
+name = "join"
+path = "examples/directives/join/main.rs"
+[[example]]
+name = "list_dir"
+path = "examples/directives/list_dir/main.rs"
+[[example]]
+name = "sn"
+path = "examples/directives/sn/main.rs"
+[[example]]
+name = "wifi_auto"
+path = "examples/directives/wifi_auto/main.rs"
+
