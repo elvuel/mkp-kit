@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 type Controller struct {
@@ -514,3 +514,4 @@ func (c *Controller) newMouseMovementForCall(opts ...mkpgo.MouseMovementSimulato
 	}
 	return &callMovement
 }
+

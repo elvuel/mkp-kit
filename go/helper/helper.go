@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
+	mkpgo "github.com/elvuel/mkp-kit/go"
 )
 
 var errSyncOutputDisabled = errors.New("please enable sync mode first")
@@ -656,3 +656,4 @@ func MouseReleaseAllContext(ctx context.Context, sfport *mkpgo.SFSerialPort, opt
 func M10(ctx context.Context, sfport *mkpgo.SFSerialPort, opt *mkpgo.M10Option) error {
 	return sfport.Mouse10Context(ctx, opt)
 }
+

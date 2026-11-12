@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/elvuel/mkp-go/cmd/client/helper"
+	"github.com/elvuel/mkp-kit/go/cmd/client/helper"
 	"github.com/spf13/cobra"
 )
 
@@ -127,3 +127,4 @@ func renderListTable(records []listRecord) string {
 func formatLength(seconds, milliseconds int) string {
 	return fmt.Sprintf("%ds %dms", seconds, milliseconds)
 }
+

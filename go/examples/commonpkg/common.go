@@ -3,8 +3,8 @@ package commonpkg
 import (
 	"log"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 var SFPort *mkpgo.SFSerialPort
@@ -35,3 +35,4 @@ func InitSFport() {
 func Log(i interface{}) {
 	log.Printf("%#v\n", i)
 }
+

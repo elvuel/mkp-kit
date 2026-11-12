@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	c "github.com/elvuel/mkp-go/examples/commonpkg"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	c "github.com/elvuel/mkp-kit/go/examples/commonpkg"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 func main() {
@@ -36,3 +36,4 @@ func main() {
 
 	c.Log(base)
 }
+

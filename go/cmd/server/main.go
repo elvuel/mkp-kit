@@ -14,9 +14,9 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	servercfg "github.com/elvuel/mkp-go/cmd/server/config"
-	"github.com/elvuel/mkp-go/cmd/server/controllers"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	servercfg "github.com/elvuel/mkp-kit/go/cmd/server/config"
+	"github.com/elvuel/mkp-kit/go/cmd/server/controllers"
 )
 
 func main() {
@@ -104,3 +104,4 @@ func main() {
 		log.Printf("http shutdown error: %v", err)
 	}
 }
+

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	servercfg "github.com/elvuel/mkp-go/cmd/server/config"
-	"github.com/elvuel/mkp-go/cmd/server/models"
+	servercfg "github.com/elvuel/mkp-kit/go/cmd/server/config"
+	"github.com/elvuel/mkp-kit/go/cmd/server/models"
 	gormMySQL "gorm.io/driver/mysql"
 	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -83,3 +83,4 @@ func applyPoolConfig(db *gorm.DB, cfg servercfg.DatabaseConfig) error {
 
 	return nil
 }
+

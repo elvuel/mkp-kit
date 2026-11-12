@@ -10,9 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	servercfg "github.com/elvuel/mkp-go/cmd/server/config"
-	"github.com/elvuel/mkp-go/cmd/server/models"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	servercfg "github.com/elvuel/mkp-kit/go/cmd/server/config"
+	"github.com/elvuel/mkp-kit/go/cmd/server/models"
 )
 
 func TestReplayWindowForRecordUsesMillisecondsAndGrace(t *testing.T) {
@@ -177,3 +177,4 @@ func assertContextTimeout(
 		t.Fatalf("context timeout = %v, want around %v", got, want)
 	}
 }
+

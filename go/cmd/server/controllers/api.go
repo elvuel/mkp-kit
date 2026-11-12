@@ -18,10 +18,10 @@ import (
 	"github.com/rs/xid"
 	"gorm.io/gorm"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	servercfg "github.com/elvuel/mkp-go/cmd/server/config"
-	"github.com/elvuel/mkp-go/cmd/server/models"
-	mkpcontroller "github.com/elvuel/mkp-go/controller"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	servercfg "github.com/elvuel/mkp-kit/go/cmd/server/config"
+	"github.com/elvuel/mkp-kit/go/cmd/server/models"
+	mkpcontroller "github.com/elvuel/mkp-kit/go/controller"
 )
 
 const (
@@ -925,3 +925,4 @@ func zeroTimeToNil(t time.Time) interface{} {
 	}
 	return t
 }
+

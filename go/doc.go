@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	"github.com/elvuel/mkp-go/controller"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	"github.com/elvuel/mkp-kit/go/controller"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 var sfport *mkpgo.SFSerialPort
@@ -163,3 +163,4 @@ func KeypadReleaseAll() error {
 }
 ```
 */
+

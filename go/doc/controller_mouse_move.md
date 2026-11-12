@@ -1,6 +1,6 @@
 # Controller.MouseMove 使用说明
 
-本文说明 `github.com/elvuel/mkp-go/controller.Controller` 中与拟人化鼠标移动相关的 API，重点是 `Controller.MouseMove`。
+本文说明 `github.com/elvuel/mkp-kit/go/controller.Controller` 中与拟人化鼠标移动相关的 API，重点是 `Controller.MouseMove`。
 
 ## 1. 适用场景
 
@@ -29,8 +29,8 @@ package main
 import (
     "time"
 
-    mkpgo "github.com/elvuel/mkp-go"
-    "github.com/elvuel/mkp-go/controller"
+    mkpgo "github.com/elvuel/mkp-kit/go"
+    "github.com/elvuel/mkp-kit/go/controller"
 )
 
 func main() {
@@ -271,5 +271,6 @@ err := ctrl.MouseMoveOffsetsStream(ctx, "", offsetCh)
 - `WithWheel` 只在本次移动开始时发送一次，不会在每个轨迹点重复发送。
 - 默认 `m10` 选项是异步发送，适合高频轨迹回放。
 - 如果直接操作底层同步指令，确保按需启动 `go sfport.Read()`；普通异步 `m10` 移动通常不依赖同步输出读取。
+
 
 

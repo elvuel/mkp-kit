@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/elvuel/mkp-go/cmd/client/cmd"
+	"github.com/elvuel/mkp-kit/go/cmd/client/cmd"
 )
 
 func main() {
@@ -12,3 +12,4 @@ func main() {
 		log.Fatal(err)
 	}
 }
+

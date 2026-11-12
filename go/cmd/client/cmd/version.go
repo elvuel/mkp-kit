@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elvuel/mkp-go/cmd/client/helper"
+	"github.com/elvuel/mkp-kit/go/cmd/client/helper"
 	"github.com/spf13/cobra"
 )
 
@@ -176,3 +176,4 @@ func defaultVersionValue(value string) string {
 	}
 	return value
 }
+

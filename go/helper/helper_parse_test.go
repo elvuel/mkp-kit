@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	mkpgo "github.com/elvuel/mkp-go"
+	mkpgo "github.com/elvuel/mkp-kit/go"
 )
 
 func TestRequireSyncOutputEnabled(t *testing.T) {
@@ -125,3 +125,4 @@ func TestParseDirectiveResultWrapsDebugCapture(t *testing.T) {
 		t.Fatalf("debug capture missing [error]: %s", text)
 	}
 }
+

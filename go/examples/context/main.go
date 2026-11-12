@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 func main() {
@@ -53,4 +53,5 @@ func runManualCancel(sfport *mkpgo.SFSerialPort, logName string) {
 	fmt.Printf("result=%q err=%v\n", result, err)
 	fmt.Printf("is canceled: %v\n", errors.Is(err, context.Canceled))
 }
+
 

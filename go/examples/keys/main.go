@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	"github.com/elvuel/mkp-go/helper"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 var sfport *mkpgo.SFSerialPort
@@ -224,3 +224,4 @@ func DemoOutputExclamation(key string) error {
 
 	return nil
 }
+

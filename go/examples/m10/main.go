@@ -4,8 +4,8 @@ import (
 	"log"
 	"time"
 
-	mkpgo "github.com/elvuel/mkp-go"
-	c "github.com/elvuel/mkp-go/examples/commonpkg"
+	mkpgo "github.com/elvuel/mkp-kit/go"
+	c "github.com/elvuel/mkp-kit/go/examples/commonpkg"
 )
 
 func main() {
@@ -24,3 +24,4 @@ func main() {
 
 	log.Println("m10 示例完成")
 }
+

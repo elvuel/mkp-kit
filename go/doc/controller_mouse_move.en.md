@@ -1,6 +1,6 @@
 # Controller.MouseMove Usage Guide
 
-This document explains the human-like mouse movement APIs on `github.com/elvuel/mkp-go/controller.Controller`, with a focus on `Controller.MouseMove`.
+This document explains the human-like mouse movement APIs on `github.com/elvuel/mkp-kit/go/controller.Controller`, with a focus on `Controller.MouseMove`.
 
 ## 1. When to use it
 
@@ -29,8 +29,8 @@ package main
 import (
     "time"
 
-    mkpgo "github.com/elvuel/mkp-go"
-    "github.com/elvuel/mkp-go/controller"
+    mkpgo "github.com/elvuel/mkp-kit/go"
+    "github.com/elvuel/mkp-kit/go/controller"
 )
 
 func main() {
@@ -271,5 +271,6 @@ err := ctrl.MouseMoveOffsetsStream(ctx, "", offsetCh)
 - `WithWheel` is sent once at movement start and is not repeated for every trajectory point.
 - `m10` options are asynchronous by default, which is suitable for high-frequency trajectory replay.
 - If you use low-level synchronous commands directly, make sure `go sfport.Read()` is running when needed. Normal asynchronous `m10` movement usually does not depend on synchronous output reading.
+
 
 

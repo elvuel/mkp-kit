@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	c "github.com/elvuel/mkp-go/examples/commonpkg"
-	"github.com/elvuel/mkp-go/helper"
+	c "github.com/elvuel/mkp-kit/go/examples/commonpkg"
+	"github.com/elvuel/mkp-kit/go/helper"
 )
 
 func main() {
@@ -19,3 +19,4 @@ func main() {
 
 	c.Log(output)
 }
+
