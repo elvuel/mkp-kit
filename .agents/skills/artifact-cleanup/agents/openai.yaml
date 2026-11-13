@@ -1,0 +1,4 @@
+interface:
+  display_name: "Artifact Cleanup"
+  short_description: "Remove session temp artifacts safely"
+  default_prompt: "Use Artifact Cleanup to inventory and remove disposable files, logs, scratch scripts, extracted intermediates, and other transient outputs created during the current conversation, while avoiding normal source files and persistent repo artifacts."

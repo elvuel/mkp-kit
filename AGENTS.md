@@ -5,6 +5,13 @@
 - This file applies to the entire `mkp-kit` monorepo unless a deeper `AGENTS.md` overrides it.
 - `mkp-kit` is one MKP SDK product with seven language implementations: `go/`, `python/`, `rust/`, `node/`, `cpp/`, `dotnet/`, and `java/`.
 
+## Skill Routing
+
+- Repo-scoped Codex skills should live under `.agents/skills/` so they can be discovered automatically in new sessions.
+- When a task creates scratch scripts, temporary logs, extracted intermediates, patch payloads, ad hoc dumps, or other disposable session artifacts, use the `artifact-cleanup` skill if available.
+- Prefer isolating temporary artifacts under repo-local temp paths such as `.tmp_artifacts/<session-id>/` or clearly disposable `.tmp_*` names instead of scattering them through the repository.
+- Before final handoff, clean disposable session artifacts or explicitly report why any temporary artifact was intentionally kept.
+
 ## Repo Model
 
 - Treat feature parity, documentation parity, and bug-fix parity as repo-level concerns by default.
