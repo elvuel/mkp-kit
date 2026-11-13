@@ -1,10 +1,13 @@
 #include "mkp/sdk.hpp"
 
 #include <chrono>
+#include <cctype>
 #include <cstdlib>
-#include "mkp/fs.hpp"
+#include <cstring>
 #include <fstream>
 #include <sstream>
+#include <utility>
+#include "mkp/fs.hpp"
 #include <stdexcept>
 #include <thread>
 

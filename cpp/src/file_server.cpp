@@ -1,6 +1,7 @@
 #include "mkp/file_server.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <stdexcept>
 
