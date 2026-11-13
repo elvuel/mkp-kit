@@ -14,6 +14,23 @@
 
 ## 安装
 
+### 从 PyPI 安装
+
+```powershell
+pip install mkp-python
+```
+
+安装完成后，可直接使用发布包内的 console scripts，例如：
+
+```powershell
+mkp --help
+mkp-server --help
+```
+
+导入模块名为 `mkp_python`。
+
+### 本地开发安装
+
 在 `mkp-kit` monorepo 中，Python 实现位于 `python/` 子目录。
 
 ```powershell

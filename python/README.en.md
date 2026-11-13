@@ -14,6 +14,23 @@ Cross-language shared content is maintained at the repository root:
 
 ## Installation
 
+### Install from PyPI
+
+```powershell
+pip install mkp-python
+```
+
+After installation, you can use the packaged console scripts directly, for example:
+
+```powershell
+mkp --help
+mkp-server --help
+```
+
+The import name is `mkp_python`.
+
+### Install for Local Development
+
 Within the `mkp-kit` monorepo, the Python implementation lives in the `python/` subdirectory.
 
 ```powershell
