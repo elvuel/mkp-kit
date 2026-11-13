@@ -2,129 +2,143 @@
 
 ## Purpose
 
-This document records the repository-internal basis for the root `AGENTS.md` policy in `mkp-kit`.
-Its purpose is to explain why the monorepo should be maintained as one MKP SDK product across Go, Python, and Rust, while still allowing language-idiomatic implementation details.
+This document records the governance basis for the root `AGENTS.md` policy in `mkp-kit`.
+It explains why the monorepo should be maintained as one MKP SDK product across `go/`, `python/`, `rust/`, `node/`, `cpp/`, `dotnet/`, and `java/`, while still allowing language-idiomatic implementation details.
 
-## Source Scope
+This file is a governance note, not a replacement for the root `AGENTS.md`.
+When there is any ambiguity, the root `AGENTS.md` is the operative rule set.
 
-This note is based on the repository's normative Markdown documents, primarily:
+## Repository Position
 
-- root `README.md` and `README.en.md`
-- per-language `README.md` and `README.en.md`
-- per-language `directives.md` and `directives.en.md`
+- `mkp-kit` is one monorepo for one MKP SDK product.
+- The language directories are multiple implementations of the same shared device-facing SDK contract.
+- Language-specific syntax, packaging, and ecosystem conventions may differ, but shared semantics should not drift silently.
 
-## Governance Findings
+## Governance Basis
 
-### 1. Root policy belongs at the monorepo level
+### 1. Shared behavior is a repo-level concern
 
-The root documentation explicitly defines `mkp-kit` as a monorepo that combines the former Go, Python, and Rust repositories, while keeping repo-level guidance at the repository root.
+Feature parity, bug-fix parity, and documentation parity are repo-level concerns by default.
+A requirement or bug should not be treated as language-local unless the user explicitly scopes it that way or the root cause is clearly language-specific.
 
-Source evidence:
-- `README.md:17`
-- `README.md:18`
-- `README.md:19`
-- `README.en.md:17`
-- `README.en.md:18`
-- `README.en.md:19`
+Implication:
 
-Policy implication:
-- The root `AGENTS.md` should govern cross-language rules, repository structure, and shared maintenance expectations.
-- It should not impose one language's internal package, module, or crate layout onto the others.
+- shared SDK work should begin with a repo-level parity mindset
+- one-language-only fixes require an explicit reason
 
-### 2. Directive behavior is a shared SDK contract
+### 2. `go/` is the default baseline for shared semantics
 
-The language ports expose the same MKP device protocol and document directive behavior as part of the maintained SDK surface.
-Python documentation already treats parity with Go as an explicit maintenance concern, and Rust documentation mirrors Go's directive example layout and helper/controller surface.
+The monorepo needs one practical default comparison target to reduce ambiguity during porting and maintenance.
+For `mkp-kit`, that default baseline is `go/` unless the root docs or an explicit parity exception say otherwise.
 
-Source evidence:
-- `python/directives.md:448`
-- `python/directives.md:449`
-- `python/directives.en.md:448`
-- `python/directives.en.md:449`
-- `rust/directives.md:38`
-- `rust/directives.md:39`
-- `rust/directives.en.md:38`
-- `rust/directives.en.md:39`
-- `rust/directives.en.md:554`
+Implication:
 
-Policy implication:
-- Directive additions, removals, renames, parser changes, response-model changes, and behavior fixes should be reviewed across all language ports.
-- If full parity is not completed in one change, the remaining gap should be documented explicitly.
+- start parity analysis from the current Go behavior and docs
+- do not copy Go blindly when Go is outdated or when another repo-level contract supersedes it
+- if Go is stale, update Go too instead of propagating stale behavior into other languages
 
-### 3. Examples, helpers, controllers, and tools are part of the maintained public surface
+### 3. Shared contracts include more than directive names
 
-The Go documentation presents examples, directive examples, helper APIs, and controller APIs as supported user-facing entry points. Rust similarly exposes helper, controller, CLI, server, and tool layers as maintained surfaces rather than incidental implementation details.
+Parity work must treat the following as shared SDK contracts unless explicitly exempted:
 
-Source evidence:
-- `go/README.md:104`
-- `go/README.md:105`
-- `go/README.md:114`
-- `go/README.md:176`
-- `go/README.md:177`
-- `go/README.en.md:104`
-- `go/README.en.md:114`
-- `go/README.en.md:176`
-- `go/README.en.md:177`
-- `rust/directives.md:512`
-- `rust/directives.md:513`
-- `rust/directives.md:514`
-- `rust/directives.md:515`
-- `rust/directives.md:516`
-- `rust/directives.en.md:550`
-- `rust/directives.en.md:551`
-- `rust/directives.en.md:552`
+- directive names, arguments, defaults, and error expectations
+- user-visible model and data-structure fields
+- JSON keys, casing, omission rules, and nullability expectations
+- parser preflight, prompt or EOF stripping, and raw-to-typed wrapper behavior
+- helper, controller, client, and service return shapes
+- CLI and HTTP request or response shapes, when exposed
+- example command forms and example output forms
+- repo terminology for the same MKP concept
+- `README.md` / `README.en.md` section structure and section intent
+- `directives.md` / `directives.en.md` section structure and section intent
 
-Policy implication:
-- Cross-language maintenance should cover not only core directive send/parse code, but also helpers, controllers, examples, CLI/HTTP exposure, and relevant tools.
+Implication:
 
-### 4. Documentation structure is intentionally aligned across languages
+- model drift is parity drift
+- example-output drift is parity drift
+- documentation-structure drift is parity drift
 
-The repository has already been normalized so each language keeps parallel README and directive-reference structure, including example indexes and monorepo-relative path conventions.
+### 4. Cross-checking must be multi-language, not one-way
 
-Source evidence:
-- `go/README.en.md:110`
-- `python/directives.en.md:57`
-- `python/directives.en.md:59`
-- `rust/directives.en.md:58`
-- `go/directives.en.md:54`
-- `python/directives.md:59`
-- `rust/directives.md:60`
+Using Go as the baseline is necessary but not sufficient.
+To avoid one-language implementation bias, parity-sensitive work should also cross-check at least two non-Go implementations before being declared complete.
 
-Policy implication:
-- Documentation updates should preserve structural parity where practical.
-- When implementation changes are shared in nature, both Chinese and English normative docs should be updated together.
+Implication:
 
-### 5. Synchronous parsing guidance is part of the contract
+- compare Go with at least two of `python/`, `rust/`, `node/`, `cpp/`, `dotnet/`, or `java/`
+- if Go, docs, and another language disagree, reconcile the contract explicitly instead of choosing implicitly
+- use the comparison to catch stale assumptions, not just to copy signatures
 
-Each language documents prerequisites for synchronous directive parsing, such as read-loop setup, sync-output mode, and EOF/parser expectations.
-These requirements materially affect user-visible behavior.
+### 5. Documentation structure is part of the contract
 
-Source evidence:
-- `go/directives.en.md:27`
-- `go/directives.en.md:31`
-- `python/directives.en.md:34`
-- `python/directives.en.md:38`
-- `python/directives.en.md:39`
-- `python/directives.en.md:40`
-- `rust/directives.en.md:28`
-- `rust/directives.en.md:31`
-- `rust/directives.en.md:32`
+In this monorepo, documentation is intentionally maintained as a parallel, user-facing surface across languages.
+The structure and section intent of language READMEs and directive references are part of the maintained contract because users navigate them comparatively.
 
-Policy implication:
-- Contributors should not change synchronous transport or parser behavior in one port without checking the others and updating the related docs/examples.
+Implication:
 
-## Resulting Root Policy Expectations
+- `README.md` / `README.en.md` should keep comparable high-level sections across languages
+- `directives.md` / `directives.en.md` should keep comparable high-level sections across languages
+- when a section is not applicable, the section should remain and say so explicitly rather than disappearing silently
 
-The root `AGENTS.md` should therefore require the following:
+### 6. Completion requires explicit parity closure
 
-1. Treat `mkp-kit` as one SDK product with three language implementations.
-2. Treat directive semantics, parser behavior, response models, examples, helpers, controllers, CLI/HTTP exposure, and normative docs as cross-language concerns by default.
-3. Allow idiomatic naming and code organization within each language, while keeping device-visible behavior and documented expectations aligned.
-4. Require explicit documentation when a parity gap remains.
-5. Require focused validation for every touched language when practical.
-6. Keep supplementary governance and maintenance notes under `docs/` at the repository root.
+Shared-surface work is not complete just because one implementation compiles or one example runs.
+Completion requires either cross-language alignment or an explicit recorded exception.
+
+Implication:
+
+- shared model, parser, example, CLI or HTTP, and doc changes should be aligned across touched languages when practical
+- if not aligned, the remaining gap must be stated explicitly
+- silent divergence should be treated as unfinished work
+
+### 7. Intentional deviations need a registry
+
+The monorepo needs a single place to record intentional cross-language differences.
+That registry is `docs/parity-exceptions.md`.
+
+Implication:
+
+- if a shared difference is intentional, record it there
+- if a shared difference is not recorded there, treat it as unintended drift
+- remove or update the entry when the deviation is resolved
+
+### 8. Validation should prove parity-sensitive paths when practical
+
+Validation should not be limited to the language being edited when the change affects a shared contract.
+At minimum, parity-sensitive work should validate one baseline path and one non-Go path when practical.
+
+Implication:
+
+- prefer focused checks first
+- record exact hardware or environment gaps when verification is blocked
+- do not imply full parity validation when only one implementation was exercised
+
+## Resulting Expectations for Contributors and Agents
+
+The root `AGENTS.md` should therefore enforce the following working model:
+
+1. Treat `mkp-kit` as one SDK product with seven language implementations.
+2. Treat directives, parsers, models, wrappers, helpers, controllers, CLI or HTTP surfaces, examples, and normative docs as shared concerns by default.
+3. Use `go/` as the default baseline for shared behavior unless superseded by root docs or an explicit parity exception.
+4. Cross-check at least two non-Go implementations before declaring parity-sensitive work complete.
+5. Treat documentation structure as part of the maintained contract, not as an incidental formatting detail.
+6. Require explicit recording of any intentional cross-language deviation in `docs/parity-exceptions.md`.
+7. Require clear disclosure of any remaining gap when full parity is not completed in the same task.
+8. Require focused multi-language validation when practical.
+
+## Practical Review Lens
+
+When reviewing a shared SDK change, ask at least:
+
+- does Go define the current baseline behavior clearly
+- do at least two non-Go implementations agree with the intended contract
+- are model fields and JSON shapes still aligned
+- do typed wrappers and parser assumptions still match
+- do examples still show the same user-visible behavior
+- do `README*` and `directives*` keep the expected section structure and intent
+- if there is intentional drift, is it recorded in `docs/parity-exceptions.md`
 
 ## Conclusion
 
-The root `AGENTS.md` is best understood as a cross-language governance file for the MKP SDK monorepo.
-It should coordinate shared behavior, documentation, and maintenance expectations across `go/`, `python/`, and `rust/`, while leaving language-specific implementation style to each subtree.
+The root `AGENTS.md` should be read as a strong cross-language governance file for the MKP SDK monorepo.
+Its job is to keep shared behavior, models, examples, and documentation aligned across all language implementations, while still allowing each language subtree to remain idiomatic in code organization and style.
