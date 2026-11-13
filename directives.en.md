@@ -18,7 +18,7 @@
 
 ## Document Scope
 
-This document maintains the **shared MKP directive semantics across Go, Python, Rust, Node.js, C++, and .NET**.
+This document maintains the **shared MKP directive semantics across Go, Python, Rust, Node.js, C++, .NET, and Java**.
 
 It describes:
 
@@ -41,7 +41,7 @@ Those belong in the language supplement docs.
 ## Shared Conventions
 
 - Unless stated otherwise, MKP CLI directives are written with the device-required line ending.
-- The same directive should keep aligned default behavior, success meaning, and failure meaning across all six ports as much as practical.
+- The same directive should keep aligned default behavior, success meaning, and failure meaning across all seven ports as much as practical.
 - If one language cannot fully match the others yet, the gap should be documented explicitly in that language supplement instead of silently drifting.
 - Language naming can remain idiomatic, but the mapping back to the raw directive should stay easy to find.
 
@@ -189,6 +189,7 @@ Shared interpretation:
 - Node.js: `node/directives.en.md`
 - C++: `cpp/directives.en.md`
 - .NET: `dotnet/directives.en.md`
+- Java: `java/directives.en.md`
 
 Those documents should keep only implementation-specific details such as:
 

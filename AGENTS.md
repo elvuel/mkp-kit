@@ -3,7 +3,7 @@
 ## Scope
 
 - This file applies to the entire `mkp-kit` monorepo unless a deeper `AGENTS.md` overrides it.
-- `mkp-kit` is one MKP SDK product with six language implementations: `go/`, `python/`, `rust/`, `node/`, `cpp/`, and `dotnet/`.
+- `mkp-kit` is one MKP SDK product with seven language implementations: `go/`, `python/`, `rust/`, `node/`, `cpp/`, `dotnet/`, and `java/`.
 
 ## Repo Model
 
@@ -13,7 +13,7 @@
 
 ## Cross-Language Change Rules
 
-When a change touches any shared SDK surface, review all six language directories:
+When a change touches any shared SDK surface, review all seven language directories:
 
 - directives and parsers
 - helper / model wrappers
@@ -23,7 +23,7 @@ When a change touches any shared SDK surface, review all six language directorie
 - examples and example indexes
 - README / directives docs in both Chinese and English
 
-If the change is shared in nature, update `go/`, `python/`, `rust/`, `node/`, `cpp/`, and `dotnet/` in the same task when practical.
+If the change is shared in nature, update `go/`, `python/`, `rust/`, `node/`, `cpp/`, `dotnet/`, and `java/` in the same task when practical.
 
 If full parity cannot be completed in the same task:
 
@@ -63,5 +63,5 @@ When adding or changing a directive or SDK behavior, check at least:
 - Prefer small, scoped changes over broad refactors for symmetry alone.
 - Keep differences explicit. If one language intentionally behaves differently, document that difference.
 - Go can be a useful historical comparison target, but it is not the only source of truth for this monorepo.
-- When uncertain, compare the existing Go, Python, Rust, Node.js, C++, and .NET implementations and docs before editing.
+- When uncertain, compare the existing Go, Python, Rust, Node.js, C++, .NET, and Java implementations and docs before editing.
 

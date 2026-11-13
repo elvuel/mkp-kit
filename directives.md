@@ -41,7 +41,7 @@
 ## 共享约定
 
 - 除特别说明外，所有 MKP CLI directive 发送时都以设备协议要求的换行结尾。
-- 同一条 directive 在六个语言端应尽量保持一致的默认行为、成功语义和失败语义。
+- 同一条 directive 在七个语言端应尽量保持一致的默认行为、成功语义和失败语义。
 - 如果某语言存在未对齐行为，应在该语言补充文档中显式标注，而不是隐式漂移。
 - 语言命名可以保持 idiomatic，但应能清楚映射回原始 directive。
 
@@ -189,6 +189,7 @@
 - Node.js：`node/directives.md`
 - C++：`cpp/directives.md`
 - .NET：`dotnet/directives.md`
+- Java：`java/directives.md`
 
 这些子文档应只保留语言实现差异，例如：
 

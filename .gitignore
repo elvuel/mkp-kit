@@ -5,5 +5,9 @@ Thumbs.db
 .mkp-debug/
 .vs/
 *.user
+.codex-patch.tmp
 dotnet/**/bin/
 dotnet/**/obj/
+java/.gradle/
+java/.gradle-tmp*/
+java/**/build/
