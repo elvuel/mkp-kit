@@ -2,12 +2,6 @@ name: publish-python
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'python/**'
-      - '.github/workflows/publish-python.yml'
 
 permissions:
   contents: read
