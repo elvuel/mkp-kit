@@ -9,7 +9,7 @@ public final class ACancelExample {
 
     public static void main(String[] args) throws Exception {
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.cancelReplay());
+            ExampleSupport.printValue(sfport.cancelReplay());
         }
     }
 }

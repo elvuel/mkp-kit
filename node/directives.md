@@ -41,7 +41,7 @@
 | 指令 | 源码路径 | 运行命令 | 示例行为 |
 |---|---|---|---|
 | `sn` | `examples/directives/sn.ts` | `npm run build && node dist/examples/directives/sn.js` | 查询设备序列号 |
-| `aversion` | `examples/directives/aversion.ts` | `npm run build && node dist/examples/directives/aversion.js` | 查询版本信息 |
+| `aversion` | `examples/directives/aversion.ts` | `npm run build && node dist/examples/directives/aversion.js` | 查询版本信息，输出 `uver` / `aver` |
 | `alive` | `examples/directives/alive.ts` | `npm run build && node dist/examples/directives/alive.js` | 查询在线状态 / 心跳 |
 | `list_dir` | `examples/directives/list_dir.ts` | `npm run build && node dist/examples/directives/list_dir.js /eMMC/applog` | 列目录 |
 | `clean_dir` | `examples/directives/clean_dir.ts` | `npm run build && node dist/examples/directives/clean_dir.js /eMMC/applog` | 清理目录 |
@@ -49,7 +49,7 @@
 | `join` | `examples/directives/join.ts` | `npm run build && node dist/examples/directives/join.js [ssid] [password]` | 连接指定 Wi‑Fi |
 | `wifi_auto` | `examples/directives/wifi_auto.ts` | `npm run build && node dist/examples/directives/wifi_auto.js [0|1]` | 查询或设置 Wi‑Fi 自动连接 |
 | `ahttpbase` | `examples/directives/ahttpbase.ts` | `npm run build && node dist/examples/directives/ahttpbase.js [url]` | 查询或设置文件服务基地址 |
-| `ainsp` | `examples/directives/ainsp.ts` | `npm run build && node dist/examples/directives/ainsp.js /eMMC/applog/demo.log` | 读取日志基础信息 |
+| `ainsp` | `examples/directives/ainsp.ts` | `npm run build && node dist/examples/directives/ainsp.js /eMMC/applog/demo.log` | 读取日志基础信息，输出 `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `atime` | `examples/directives/atime.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | 读取日志时长 |
 | `adumj` | `examples/directives/adumj.ts` | `npm run build && node dist/examples/directives/adumj.js /eMMC/applog/demo.log` | 设备日志转动作 JSON |
 | `aget` | `examples/directives/aget.ts` | `npm run build && node dist/examples/directives/aget.js <filepath>` | 从 file server 拉取文件到 MKP |
@@ -96,8 +96,8 @@ Node 在 `src/parser.ts` 中注册 parser。
 | `clean_dir` / `delete_file` | 纯文本状态输出 | `cli>` |
 | `join` / `wifi_auto` | 纯文本状态输出 | `cli>` |
 | `aget` / `aput` / `ajson2log` | 纯文本输出 | `cli>` |
-| `sn` / `alive` / `aversion` / `ainsp` / `list_dir` | JSON 提取 | `<EOF>` |
-| `atime` | 行内 JSON 提取 | `<EOF>` |
+| `sn` / `alive` / `aversion` / `list_dir` | JSON 提取 | `<EOF>` |
+| `ainsp` / `atime` | 行内 JSON 提取 | `<EOF>` |
 | `adumj` | JSON 提取 | `cli>` |
 | `ahttpbase` | 专用解析：优先 JSON，失败时回退 URL 行提取 | `cli>` |
 
@@ -107,9 +107,9 @@ Node 在 `src/parser.ts` 中注册 parser。
 |---|---|
 | `SN` | `sn` 输出 |
 | `Heartbeat` | `alive` 输出 |
-| `MKPVersion` | `aversion` 输出 |
-| `LogLength` | `atime` 输出 |
-| `LogInfo` | `ainsp` 输出 |
+| `MKPVersion` | `aversion` 输出；规范字段为 `uver` / `aver` |
+| `LogLength` | `atime` 输出；规范字段为 `seconds` / `milsec` |
+| `LogInfo` | `ainsp` 输出；规范字段为 `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `FileSystem` | `list_dir` 输出 |
 | `ActionDump` | `adumj` 输出 |
 | `AHTTPBase` | `ahttpbase` 输出 |
@@ -131,12 +131,9 @@ Node 在 `src/parser.ts` 中注册 parser。
 
 - Node directive 示例现已默认面向真实设备，但仍可通过 `--fixture` 切换回离线桩响应。
 - Node 当前没有 Python 那样的自动串口调试摘要与 `.mkp-debug/` 机制。
+- `aversion` 现已对齐到 `uver` / `aver`；parser 仍兼容旧 `app` / `boot` 固件返回。
+- `ainsp` 现已对齐到 `seconds` / `milsec` / `width` / `heigh` / `stpos`；不再以 `name` / `path` / `size` 作为主返回结构。
 - `join` / `wifi_auto` / `aget` / `aput` / `ajson2log` 在 Node 侧仍主要返回文本，而不是专门的结构化模型。
 - `astop` 在 Node parser 中按 `cli>` 提示符结束，这一点与部分其它语言实现不同。
 - `examples/context.ts` 展示的是 `AbortSignal` 封装思路，而不是 Go `context.Context` 的 API 直接映射。
 - 共享 directive 语义变更时，请先更新 `../directives.md`，再记录 Node 特有差异。
-
-
-
-
-

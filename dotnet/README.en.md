@@ -190,7 +190,7 @@ The file server currently supports:
 ## .NET-Specific Notes
 
 - `examples/Directives/` uses one project with subcommands instead of one directory per directive like Go / Python / Rust
-- the `MKPVersion` model stores the raw `app` / `boot` / `hw` fields from the device; `mkp-dotnet-client version` maps them to `uver` / `aver` semantics at presentation time
+- `MKPVersion` and `LogInfo` now align to the shared directive semantics for `uver` / `aver` and `seconds` / `milsec` / `width` / `heigh` / `stpos`; compatibility fields remain only as internal fallbacks
 - `mkp-dotnet-client` is currently an HTTP API client, not a direct serial directive client
 - when shared directive semantics change, update `../directives.en.md` first
 

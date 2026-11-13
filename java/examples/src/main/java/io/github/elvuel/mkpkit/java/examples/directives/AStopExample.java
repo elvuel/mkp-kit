@@ -9,7 +9,7 @@ public final class AStopExample {
 
     public static void main(String[] args) throws Exception {
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.stopRecording());
+            ExampleSupport.printValue(sfport.stopRecording());
         }
     }
 }

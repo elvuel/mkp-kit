@@ -10,7 +10,7 @@ public final class ATimeExample {
     public static void main(String[] args) throws Exception {
         String path = args.length > 0 ? args[0] : "/eMMC/applog/spike.log";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.atime(path));
+            ExampleSupport.printValue(sfport.atime(path));
         }
     }
 }

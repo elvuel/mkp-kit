@@ -12,7 +12,7 @@ public final class AJson2LogExample {
         String jsonpath = args.length > 0 ? args[0] : "demo.json";
         String savepath = args.length > 1 ? args[1] : "/eMMC/applog/demo.log";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.ajson2log(new Models.AJson2LogOption(jsonpath, savepath)));
+            ExampleSupport.printValue(sfport.ajson2log(new Models.AJson2LogOption(jsonpath, savepath)));
         }
     }
 }

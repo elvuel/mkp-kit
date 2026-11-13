@@ -19,7 +19,7 @@ public final class WifiAutoExample {
             throw new IllegalArgumentException("usage: WifiAutoExample [0|1]");
         }
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.wifiAuto(option));
+            ExampleSupport.printValue(sfport.wifiAuto(option));
         }
     }
 }

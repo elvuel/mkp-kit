@@ -9,7 +9,7 @@ public final class AliveExample {
 
     public static void main(String[] args) throws Exception {
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.alive());
+            ExampleSupport.printValue(sfport.alive());
         }
     }
 }

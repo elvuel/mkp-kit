@@ -76,7 +76,7 @@ void main();
 | `sn` / `aversion` / `alive` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/sn.js --help` | 查询设备序列号、版本与在线状态，并支持统一帮助输出 |
 | `list_dir` / `clean_dir` / `delete_file` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/list_dir.js /eMMC/applog` | 浏览目录、清理目录、删除文件 |
 | `join` / `wifi_auto` / `ahttpbase` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/join.js <ssid> <password>` | 配置 Wi‑Fi、自动联网与 HTTP 基地址 |
-| `ainsp` / `atime` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | 查看日志信息与时长 |
+| `ainsp` / `atime` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | 查看日志信息与时长；其中 `atime` 输出 `seconds` / `milsec`，`ainsp` 输出 `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `adumj` / `aget` / `aput` / `ajson2log` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/ajson2log.js D:\tmp\demo.json /eMMC/applog/demo.log` | 上传、下载与 JSON/日志互转 |
 | `alog` / `astop` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/alog.js mkpdemo/demo` | 开始录制与停止录制 |
 
@@ -176,10 +176,8 @@ node .\dist\src\bin\file-server.js -p 8080 -r .\file_root
 - `examples/directives/*` 当前默认连接真实设备；如需离线演示 parser，可显式追加 `--fixture` 使用桩响应。
 - `examples/m10.ts` 与 `examples/kpad.ts` 默认使用 `DryRunTransport`；directive 示例则默认连接真实设备，并支持 `MKP_SERIAL_PORT` / `--port COMx` 指定串口。
 - `examples/context.ts` 展示的是 Node 侧基于 `AbortSignal` 的取消封装，不是 Go `context.Context` 的一比一 API 对齐。
+- `aversion` 当前按 Go 语义输出 `uver` / `aver`；parser 仍兼容旧固件可能返回的 `app` / `boot` 字段。
+- `ainsp` 当前按 Go 语义输出 `seconds` / `milsec` / `width` / `heigh` / `stpos`，不再以 `name` / `path` / `size` 作为主返回结构。
 - 当前 `join` / `wifi_auto` / `aget` / `aput` / `ajson2log` 仍以文本返回为主，尚未像部分其它语言一样补齐专门返回模型。
 - 当前 `mkp-server` 仅支持 `sqlite` / `sqlite3` / `memory`；Go 侧 MySQL / PostgreSQL driver parity 仍可后续补齐。
 - 共享 directive 含义变更时，请优先更新仓库根目录文档，再回到 `node/` 补 Node 特有差异。
-
-
-
-

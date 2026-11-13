@@ -10,7 +10,7 @@ public final class ALogExample {
     public static void main(String[] args) throws Exception {
         String logName = args.length > 0 ? args[0] : "subdir1/test";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.alog(logName, null, sfport.syncOutputTimeoutMs()));
+            ExampleSupport.printValue(sfport.alog(logName, null, sfport.syncOutputTimeoutMs()));
         }
     }
 }

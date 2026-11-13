@@ -9,7 +9,7 @@ public final class SnExample {
 
     public static void main(String[] args) throws Exception {
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.sn());
+            ExampleSupport.printValue(sfport.sn());
         }
     }
 }

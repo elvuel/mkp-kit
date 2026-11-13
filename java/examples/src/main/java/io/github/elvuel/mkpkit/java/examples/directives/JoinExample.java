@@ -16,7 +16,7 @@ public final class JoinExample {
             throw new IllegalArgumentException("usage: JoinExample [ssid password]");
         }
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.join(option));
+            ExampleSupport.printValue(sfport.join(option));
         }
     }
 }

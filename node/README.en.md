@@ -76,7 +76,7 @@ Common directive examples:
 | `sn` / `aversion` / `alive` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/sn.js --help` | Query device serial number, version, and liveness, with shared help output |
 | `list_dir` / `clean_dir` / `delete_file` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/list_dir.js /eMMC/applog` | Browse directories, clean directories, and delete files |
 | `join` / `wifi_auto` / `ahttpbase` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/join.js <ssid> <password>` | Configure Wi‑Fi, auto-connect, and the HTTP base address |
-| `ainsp` / `atime` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | Read log metadata and duration |
+| `ainsp` / `atime` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | Read log metadata and duration; `atime` returns `seconds` / `milsec`, and `ainsp` returns `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `adumj` / `aget` / `aput` / `ajson2log` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/ajson2log.js D:\tmp\demo.json /eMMC/applog/demo.log` | Upload, download, and convert between JSON and MKP logs |
 | `alog` / `astop` | `examples/directives/<name>.ts` | `npm run build && node dist/examples/directives/alog.js mkpdemo/demo` | Start and stop recording |
 
@@ -176,10 +176,8 @@ All paths below are relative to `mkp-kit/node/`.
 - `examples/directives/*` now default to a real device; for offline parser demos, explicitly add `--fixture` to use canned responses.
 - `examples/m10.ts` and `examples/kpad.ts` use `DryRunTransport` by default; directive examples use a real device by default and support `MKP_SERIAL_PORT` / `--port COMx` for port selection.
 - `examples/context.ts` demonstrates a Node-side cancellation wrapper based on `AbortSignal`; it is not a one-to-one API match for Go `context.Context`.
+- `aversion` now follows the Go-aligned `uver` / `aver` shape; the parser still accepts older firmware payloads that expose `app` / `boot`.
+- `ainsp` now follows the Go-aligned `seconds` / `milsec` / `width` / `heigh` / `stpos` shape rather than treating `name` / `path` / `size` as its primary response structure.
 - `join` / `wifi_auto` / `aget` / `aput` / `ajson2log` still return plain text in Node, instead of dedicated response models used in some other language implementations.
 - `mkp-server` currently supports only `sqlite`, `sqlite3`, and `memory`; MySQL / PostgreSQL driver parity with Go can be added later.
 - When shared directive meaning changes, update the monorepo root docs first, then record the Node-specific differences under `node/`.
-
-
-
-

@@ -21,7 +21,7 @@ export class FixtureTransport implements DirectiveTransport {
       case "alive":
         return 'alive\n{"timetamp":1731398400}\n<EOF>';
       case "aversion":
-        return 'aversion\n{"app":"1.0.0","boot":"1.0.0","hw":"demo"}\n<EOF>';
+        return 'aversion\n{"uver":"1.0.0","aver":"1.0.0"}\n<EOF>';
       case "atime": {
         const path = directive.slice("atime".length).trim() || "/eMMC/applog/demo.log";
         return `atime ${path}\n{"seconds":6,"milsec":950}\n<EOF>`;
@@ -29,7 +29,7 @@ export class FixtureTransport implements DirectiveTransport {
       case "ainsp": {
         const path = directive.slice("ainsp".length).trim() || "/eMMC/applog/demo.log";
         const nameOnly = path.split("/").filter(Boolean).pop() ?? "demo.log";
-        return `ainsp ${path}\n{"name":"${nameOnly}","path":"${path}","size":128}\n<EOF>`;
+        return `ainsp ${path}\n{"seconds":6,"milsec":950,"width":1920,"heigh":1080,"stpos":{"x":10,"y":20}}\n<EOF>`;
       }
       case "list_dir": {
         const path = directive.slice("list_dir".length).trim() || "/eMMC/applog";
@@ -220,3 +220,4 @@ export async function runDirectiveExample<T>(
 export function log(value: unknown): void {
   console.log(JSON.stringify(value, null, 2));
 }
+

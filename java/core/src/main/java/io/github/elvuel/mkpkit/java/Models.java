@@ -14,13 +14,16 @@ public final class Models {
     public record Heartbeat(long timetamp) {
     }
 
-    public record MkpVersion(String app, String boot, String hw, JsonNode raw) {
+    public record MkpVersion(String uver, String aver) {
     }
 
     public record LogLength(int seconds, int milsec) {
     }
 
-    public record LogInfo(String name, String path, Long size, JsonNode raw) {
+    public record StPos(int x, int y) {
+    }
+
+    public record LogInfo(int seconds, int milsec, int width, int heigh, StPos stpos) {
     }
 
     public record AHttpBase(String ahttpbase) {

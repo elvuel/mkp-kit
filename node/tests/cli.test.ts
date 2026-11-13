@@ -37,7 +37,7 @@ class FakePort implements CliSerialPort {
   }
 
   async aversion(): Promise<unknown> {
-    return { app: "1.0.0" };
+    return { uver: "1.0.0", aver: "1.0.1" };
   }
 
   async atime(path: string): Promise<unknown> {
@@ -182,3 +182,4 @@ test("cli returns 1 on unknown command", async () => {
   assert.equal(await runCli(["unknown-cmd"], harness.deps), 1);
   assert.match(harness.err[0] ?? "", /unknown command/i);
 });
+

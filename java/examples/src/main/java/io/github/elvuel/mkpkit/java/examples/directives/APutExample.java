@@ -11,7 +11,7 @@ public final class APutExample {
     public static void main(String[] args) throws Exception {
         String filepath = args.length > 0 ? args[0] : "/eMMC/applog/demo.log";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.aput(new Models.APutOption(filepath)));
+            ExampleSupport.printValue(sfport.aput(new Models.APutOption(filepath)));
         }
     }
 }

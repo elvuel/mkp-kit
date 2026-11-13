@@ -84,16 +84,23 @@ public sealed class DirectiveParserRegistry
 
     private static SN ParseSn(JsonElement root) => new(GetString(root, "sn") ?? string.Empty);
     private static Heartbeat ParseHeartbeat(JsonElement root) => new(GetInt64(root, "timetamp"), root.Clone());
-    private static MKPVersion ParseVersion(JsonElement root) => new(GetString(root, "app"), GetString(root, "boot"), GetString(root, "hw"), root.Clone());
+    private static MKPVersion ParseVersion(JsonElement root) => new(
+        GetString(root, "uver") ?? GetString(root, "app"),
+        GetString(root, "aver") ?? GetString(root, "boot"),
+        GetString(root, "app"),
+        GetString(root, "boot"),
+        GetString(root, "hw"),
+        root.Clone());
     private static LogLength ParseLogLength(JsonElement root) => new(GetInt32(root, "seconds"), GetInt32(root, "milsec"), root.Clone());
     private static LogInfo ParseLogInfo(JsonElement root) => new(
-        GetString(root, "name"),
-        GetString(root, "path"),
-        GetInt32(root, "size"),
         GetInt32(root, "seconds"),
         GetInt32(root, "milsec"),
         GetInt32(root, "width"),
         GetInt32(root, "heigh"),
+        ParseStPos(root),
+        GetString(root, "name"),
+        GetString(root, "path"),
+        GetInt32(root, "size"),
         root.Clone());
 
     private static AHTTPBase ParseAHttpBase(JsonElement root) => new(GetString(root, "ahttpbase") ?? GetString(root, "url") ?? string.Empty, root.Clone());
@@ -127,6 +134,16 @@ public sealed class DirectiveParserRegistry
             GetInt64(root, "size"),
             GetString(root, "displayName") ?? GetString(root, "display_name"),
             contents);
+    }
+
+    private static StPos? ParseStPos(JsonElement root)
+    {
+        if (!TryGetProperty(root, "stpos", out var stpos) || stpos.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        return new StPos(GetInt32(stpos, "x"), GetInt32(stpos, "y"));
     }
 
     private static ActionDump ParseActionDump(JsonElement? root)

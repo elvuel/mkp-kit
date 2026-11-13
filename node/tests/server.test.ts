@@ -16,7 +16,7 @@ class FakeServerPort implements ServerPort {
   deleteFileCalls: string[] = [];
   moveCursorCalls: Array<{ x: number; y: number }> = [];
   startReplayingCalls: Array<{ logName: string; delay: number }> = [];
-  version: MKPVersion = { app: "1.0.0", boot: "1.0.1", hw: "demo" };
+  version: MKPVersion = { uver: "1.0.0", aver: "1.0.1" };
   length: LogLength = { seconds: 1, milsec: 250 };
   status: SerialPortStatus = {
     name: "COM_TEST",
@@ -464,3 +464,4 @@ test("server adds cors headers and handles preflight", async () => {
   );
   assert.equal(health.headers.get("access-control-allow-origin"), "http://localhost:3000");
 });
+

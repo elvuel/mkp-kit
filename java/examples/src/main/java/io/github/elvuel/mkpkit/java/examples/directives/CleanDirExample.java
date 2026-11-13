@@ -10,7 +10,7 @@ public final class CleanDirExample {
     public static void main(String[] args) throws Exception {
         String path = args.length > 0 ? args[0] : "/eMMC/applog/subdir1";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.cleanDir(path));
+            ExampleSupport.printValue(sfport.cleanDir(path));
         }
     }
 }

@@ -9,7 +9,7 @@ public final class AVersionExample {
 
     public static void main(String[] args) throws Exception {
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.aversion());
+            ExampleSupport.printValue(sfport.aversion());
         }
     }
 }

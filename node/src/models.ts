@@ -34,6 +34,8 @@ export interface Heartbeat {
 }
 
 export interface MKPVersion {
+  uver?: string;
+  aver?: string;
   app?: string;
   boot?: string;
   hw?: string;
@@ -45,7 +47,17 @@ export interface LogLength {
   milsec: number;
 }
 
+export interface StPos {
+  x: number;
+  y: number;
+}
+
 export interface LogInfo {
+  seconds?: number;
+  milsec?: number;
+  width?: number;
+  heigh?: number;
+  stpos?: StPos;
   name?: string;
   path?: string;
   size?: number;
@@ -439,3 +451,4 @@ export class KpadOption {
     this.commitKeys = undefined;
   }
 }
+

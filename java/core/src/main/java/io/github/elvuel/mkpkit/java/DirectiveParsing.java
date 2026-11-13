@@ -344,7 +344,7 @@ public final class DirectiveParsing {
     }
 
     private static Models.MkpVersion parseVersion(JsonNode root) {
-        return new Models.MkpVersion(optText(root, "app"), optText(root, "boot"), optText(root, "hw"), root.deepCopy());
+        return new Models.MkpVersion(firstNonBlank(optText(root, "uver"), optText(root, "app")), firstNonBlank(optText(root, "aver"), optText(root, "boot")));
     }
 
     private static Models.LogLength parseLogLength(JsonNode root) {
@@ -352,7 +352,11 @@ public final class DirectiveParsing {
     }
 
     private static Models.LogInfo parseLogInfo(JsonNode root) {
-        return new Models.LogInfo(optText(root, "name"), optText(root, "path"), optLong(root, "size"), root.deepCopy());
+        JsonNode stpos = root.get("stpos");
+        Models.StPos point = stpos == null || stpos.isNull() || stpos.isMissingNode()
+            ? null
+            : new Models.StPos(stpos.path("x").asInt(), stpos.path("y").asInt());
+        return new Models.LogInfo(root.path("seconds").asInt(), root.path("milsec").asInt(), root.path("width").asInt(), root.path("heigh").asInt(), point);
     }
 
     private static Models.AHttpBase parseAHttpBaseNode(JsonNode root) {
@@ -433,5 +437,14 @@ public final class DirectiveParsing {
             return null;
         }
         return node.asLong();
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 }

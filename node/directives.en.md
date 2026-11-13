@@ -41,7 +41,7 @@ This file only keeps Node.js / TypeScript-specific content:
 | Directive | Source path | Run command | Behavior |
 |---|---|---|---|
 | `sn` | `examples/directives/sn.ts` | `npm run build && node dist/examples/directives/sn.js` | Query the device serial number |
-| `aversion` | `examples/directives/aversion.ts` | `npm run build && node dist/examples/directives/aversion.js` | Query version information |
+| `aversion` | `examples/directives/aversion.ts` | `npm run build && node dist/examples/directives/aversion.js` | Query version information with `uver` / `aver` |
 | `alive` | `examples/directives/alive.ts` | `npm run build && node dist/examples/directives/alive.js` | Query liveness / heartbeat |
 | `list_dir` | `examples/directives/list_dir.ts` | `npm run build && node dist/examples/directives/list_dir.js /eMMC/applog` | List directories |
 | `clean_dir` | `examples/directives/clean_dir.ts` | `npm run build && node dist/examples/directives/clean_dir.js /eMMC/applog` | Clean directories |
@@ -49,7 +49,7 @@ This file only keeps Node.js / TypeScript-specific content:
 | `join` | `examples/directives/join.ts` | `npm run build && node dist/examples/directives/join.js [ssid] [password]` | Connect to Wi‑Fi |
 | `wifi_auto` | `examples/directives/wifi_auto.ts` | `npm run build && node dist/examples/directives/wifi_auto.js [0|1]` | Query or set Wi‑Fi auto-connect |
 | `ahttpbase` | `examples/directives/ahttpbase.ts` | `npm run build && node dist/examples/directives/ahttpbase.js [url]` | Query or set the file-service base URL |
-| `ainsp` | `examples/directives/ainsp.ts` | `npm run build && node dist/examples/directives/ainsp.js /eMMC/applog/demo.log` | Read basic log metadata |
+| `ainsp` | `examples/directives/ainsp.ts` | `npm run build && node dist/examples/directives/ainsp.js /eMMC/applog/demo.log` | Read basic log metadata with `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `atime` | `examples/directives/atime.ts` | `npm run build && node dist/examples/directives/atime.js /eMMC/applog/spike.log` | Read log duration |
 | `adumj` | `examples/directives/adumj.ts` | `npm run build && node dist/examples/directives/adumj.js /eMMC/applog/demo.log` | Convert a device log into action JSON |
 | `aget` | `examples/directives/aget.ts` | `npm run build && node dist/examples/directives/aget.js <filepath>` | Pull a file from the file server into MKP |
@@ -96,8 +96,8 @@ Node registers parsers in `src/parser.ts`.
 | `clean_dir` / `delete_file` | plain-text status output | `cli>` |
 | `join` / `wifi_auto` | plain-text status output | `cli>` |
 | `aget` / `aput` / `ajson2log` | plain-text output | `cli>` |
-| `sn` / `alive` / `aversion` / `ainsp` / `list_dir` | JSON extraction | `<EOF>` |
-| `atime` | line-JSON extraction | `<EOF>` |
+| `sn` / `alive` / `aversion` / `list_dir` | JSON extraction | `<EOF>` |
+| `ainsp` / `atime` | line-JSON extraction | `<EOF>` |
 | `adumj` | JSON extraction | `cli>` |
 | `ahttpbase` | dedicated parser: JSON first, URL-line fallback | `cli>` |
 
@@ -107,9 +107,9 @@ Node registers parsers in `src/parser.ts`.
 |---|---|
 | `SN` | `sn` output |
 | `Heartbeat` | `alive` output |
-| `MKPVersion` | `aversion` output |
-| `LogLength` | `atime` output |
-| `LogInfo` | `ainsp` output |
+| `MKPVersion` | `aversion` output; canonical fields are `uver` / `aver` |
+| `LogLength` | `atime` output; canonical fields are `seconds` / `milsec` |
+| `LogInfo` | `ainsp` output; canonical fields are `seconds` / `milsec` / `width` / `heigh` / `stpos` |
 | `FileSystem` | `list_dir` output |
 | `ActionDump` | `adumj` output |
 | `AHTTPBase` | `ahttpbase` output |
@@ -131,12 +131,9 @@ Node registers parsers in `src/parser.ts`.
 
 - Node directive examples now default to real-device execution, while `--fixture` remains available for offline canned responses.
 - Node does not currently include the Python-style automatic serial debug summary and `.mkp-debug/` dump mechanism.
+- `aversion` is now aligned to `uver` / `aver`; the parser still accepts older firmware payloads that expose `app` / `boot`.
+- `ainsp` is now aligned to `seconds` / `milsec` / `width` / `heigh` / `stpos` rather than using `name` / `path` / `size` as its primary response structure.
 - `join` / `wifi_auto` / `aget` / `aput` / `ajson2log` still return plain text on the Node side rather than dedicated structured response models.
 - `astop` in the Node parser currently waits for the `cli>` prompt, which differs from some other language implementations.
 - `examples/context.ts` demonstrates an `AbortSignal` wrapper pattern rather than a direct API mapping of Go `context.Context`.
 - When shared directive meaning changes, update `../directives.en.md` first and then record the Node-specific differences here.
-
-
-
-
-

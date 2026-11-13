@@ -11,7 +11,7 @@ public final class AHttpBaseExample {
     public static void main(String[] args) throws Exception {
         String url = args.length > 0 ? args[0] : "http://127.0.0.1:8080";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.ahttpbase(new Models.AHttpBaseOption(url)));
+            ExampleSupport.printValue(sfport.ahttpbase(new Models.AHttpBaseOption(url)));
         }
     }
 }

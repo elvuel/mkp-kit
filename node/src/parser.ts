@@ -1,4 +1,4 @@
-import type { AHTTPBase } from "./models.js";
+import type { AHTTPBase, LogInfo, MKPVersion, StPos } from "./models.js";
 
 export const EOF_DEFAULT = "<EOF>";
 export const EOF_CLI = "cli>";
@@ -25,6 +25,79 @@ export interface DirectiveParser<T = unknown> {
 
 function directiveName(directive: string): string {
   return directive.trim().split(/\s+/, 1)[0] ?? directive.trim();
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function firstNonBlank(...values: Array<string | undefined>): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+function getString(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function getNumber(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
+function parseStPos(value: unknown): StPos | undefined {
+  const root = asRecord(value);
+  const x = getNumber(root, "x");
+  const y = getNumber(root, "y");
+  if (x === undefined && y === undefined) {
+    return undefined;
+  }
+  return {
+    x: x ?? 0,
+    y: y ?? 0
+  };
+}
+
+function parseVersion(value: unknown): MKPVersion {
+  const root = asRecord(value);
+  const uver = firstNonBlank(getString(root, "uver"), getString(root, "app"));
+  const aver = firstNonBlank(getString(root, "aver"), getString(root, "boot"));
+  return {
+    ...(uver !== undefined ? { uver } : {}),
+    ...(aver !== undefined ? { aver } : {})
+  };
+}
+
+function parseLogInfo(value: unknown): LogInfo {
+  const root = asRecord(value);
+  const seconds = getNumber(root, "seconds");
+  const milsec = getNumber(root, "milsec");
+  const width = getNumber(root, "width");
+  const heigh = getNumber(root, "heigh");
+  const stpos = parseStPos(root.stpos);
+  return {
+    ...(seconds !== undefined ? { seconds } : {}),
+    ...(milsec !== undefined ? { milsec } : {}),
+    ...(width !== undefined ? { width } : {}),
+    ...(heigh !== undefined ? { heigh } : {}),
+    ...(stpos !== undefined ? { stpos } : {})
+  };
 }
 
 function preflight(data: string, eofFlag: string): string {
@@ -135,9 +208,9 @@ function createTextParser(name: string, eofFlag = EOF_CLI): DirectiveParser<stri
 export const PARSERS: Record<string, DirectiveParser> = {
   sn: createJsonBlobParser("sn"),
   alive: createJsonBlobParser("alive"),
-  aversion: createJsonBlobParser("aversion"),
-  atime: createLineJsonParser("atime", EOF_DEFAULT, ["seconds"]),
-  ainsp: createJsonBlobParser("ainsp"),
+  aversion: { name: "aversion", eofFlag: EOF_DEFAULT, parse: (cli, data) => parseVersion(parseJsonBlob(cli, data, EOF_DEFAULT)) },
+  atime: createLineJsonParser("atime", EOF_DEFAULT, ["\"seconds\":"]),
+  ainsp: { name: "ainsp", eofFlag: EOF_DEFAULT, parse: (cli, data) => parseLogInfo(parseLineJson(cli, data, EOF_DEFAULT, ["\"seconds\":", "\"width\":"])) },
   list_dir: createJsonBlobParser("list_dir"),
   adumj: createJsonBlobParser("adumj", EOF_CLI),
   ahttpbase: { name: "ahttpbase", eofFlag: EOF_CLI, parse: (cli, data) => parseAhttpbase(cli, data) },

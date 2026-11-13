@@ -21,6 +21,35 @@ public sealed class ParserFixtureTests
     }
 
     [Fact]
+    public void ParsesAversionCanonicalFields()
+    {
+        const string directive = "aversion";
+        const string raw = "aversion\r\n{\"uver\":\"u1\",\"aver\":\"a1\"}\r\n<EOF>\r\n";
+
+        var parsed = Assert.IsType<MKPVersion>(Registry.Resolve(directive).Parse(directive, raw));
+
+        Assert.Equal("u1", parsed.Uver);
+        Assert.Equal("a1", parsed.Aver);
+    }
+
+    [Fact]
+    public void ParsesAinspCanonicalFields()
+    {
+        const string directive = "ainsp /eMMC/applog/demo.log";
+        const string raw = "ainsp /eMMC/applog/demo.log\r\nnoise\r\n{\"seconds\":6,\"milsec\":950,\"width\":1920,\"heigh\":1080,\"stpos\":{\"x\":10,\"y\":20}}\r\n<EOF>\r\n";
+
+        var parsed = Assert.IsType<LogInfo>(Registry.Resolve(directive).Parse(directive, raw));
+
+        Assert.Equal(6, parsed.Seconds);
+        Assert.Equal(950, parsed.Milsec);
+        Assert.Equal(1920, parsed.Width);
+        Assert.Equal(1080, parsed.Height);
+        Assert.NotNull(parsed.Stpos);
+        Assert.Equal(10, parsed.Stpos!.X);
+        Assert.Equal(20, parsed.Stpos!.Y);
+    }
+
+    [Fact]
     public void ParsesAHttpBaseOkFallback()
     {
         const string directive = "ahttpbase http://127.0.0.1:8080";

@@ -10,7 +10,7 @@ public final class ADumjExample {
     public static void main(String[] args) throws Exception {
         String path = args.length > 0 ? args[0] : "/eMMC/applog/demo.log";
         try (SFSerialPort sfport = ExampleSupport.newDevicePort()) {
-            System.out.println(sfport.adumj(path));
+            ExampleSupport.printValue(sfport.adumj(path));
         }
     }
 }
