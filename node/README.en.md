@@ -1,6 +1,6 @@
 # MKP Node.js / TypeScript
 
-English | [中文](./README.md) | [Shared Overview](../README.en.md) | [Shared Command Reference](../directives.en.md) | [Node Directive Supplement](./directives.en.md)
+English | [中文](./README.md) | [Shared Overview](../README.en.md) | [Shared Command Reference](../directives.en.md) | [Node Directive Supplement](./directives.en.md) | [npm Publishing Guide](./NPM.md)
 
 ---
 
@@ -10,8 +10,26 @@ Cross-language shared content lives in the monorepo root:
 
 - Shared overview: `../README.en.md`
 - Shared command reference: `../directives.en.md`
+- Node publishing guide: `./NPM.md`
 
 ## Installation
+
+### Install from npm
+
+```powershell
+npm install @elvuel/mkp-node
+```
+
+After installation, you can use the local package bins directly, for example:
+
+```powershell
+npx mkp --help
+npx mkp-server --help
+```
+
+The package import name is `@elvuel/mkp-node`.
+
+### Install for Local Development
 
 Inside the `mkp-kit` monorepo, the Node.js / TypeScript implementation lives under `node/`.
 
@@ -24,7 +42,7 @@ npm run build
 Current `package.json` expectations:
 
 - package name: `@elvuel/mkp-node`
-- currently still `private: true`
+- publish mode: public scoped package
 - Node.js `>= 20`
 - main runtime dependency: `serialport`
 - SQLite-backed `mkp-server` persistence has been verified on Node.js `24.x`; if `node:sqlite` is unavailable, use `MKP_DB_DRIVER=memory`

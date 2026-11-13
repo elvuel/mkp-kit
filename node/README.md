@@ -1,6 +1,6 @@
 # MKP Node.js / TypeScript
 
-[English](./README.en.md) | 中文 | [共享总览](../README.md) | [共享指令说明](../directives.md) | [Node 指令补充](./directives.md)
+[English](./README.en.md) | 中文 | [共享总览](../README.md) | [共享指令说明](../directives.md) | [Node 指令补充](./directives.md) | [npm 发布说明](./NPM.md)
 
 ---
 
@@ -10,8 +10,26 @@
 
 - 共享总览：`../README.md`
 - 共享指令说明：`../directives.md`
+- Node 发布说明：`./NPM.md`
 
 ## 安装
+
+### 从 npm 安装
+
+```powershell
+npm install @elvuel/mkp-node
+```
+
+安装完成后，可直接使用本地 bin，例如：
+
+```powershell
+npx mkp --help
+npx mkp-server --help
+```
+
+导入包名为 `@elvuel/mkp-node`。
+
+### 本地开发安装
 
 在 `mkp-kit` monorepo 中，Node.js / TypeScript 实现位于 `node/` 子目录。
 
@@ -24,7 +42,7 @@ npm run build
 当前 `package.json` 约定：
 
 - package name：`@elvuel/mkp-node`
-- 当前仍为 `private: true`
+- 发布方式：public scoped package
 - Node.js `>= 20`
 - 主要依赖：`serialport`
 - `mkp-server` 的 SQLite 持久化已在 Node.js `24.x` 验证；若运行时没有 `node:sqlite`，可改用 `MKP_DB_DRIVER=memory`

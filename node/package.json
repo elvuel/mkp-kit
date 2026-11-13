@@ -1,8 +1,28 @@
 {
   "name": "@elvuel/mkp-node",
   "version": "0.1.0",
-  "private": true,
+  "description": "Node.js SDK and tools for the MKP serial device protocol",
   "type": "module",
+  "author": "elvuel",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/elvuel/mkp-kit/tree/main/node",
+  "bugs": {
+    "url": "https://github.com/elvuel/mkp-kit/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elvuel/mkp-kit.git",
+    "directory": "node"
+  },
+  "keywords": [
+    "mkp",
+    "serial",
+    "hid",
+    "macro",
+    "automation",
+    "nodejs",
+    "typescript"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -13,6 +33,16 @@
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
     }
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "README.en.md",
+    "directives.md",
+    "directives.en.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "mkp": "./dist/src/bin/mkp.js",
