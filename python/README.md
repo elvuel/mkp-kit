@@ -1,6 +1,6 @@
 # MKP Python
 
-[English](./README.en.md) | 中文 | [共享总览](../README.md) | [共享指令说明](../directives.md) | [Python 指令补充](./directives.md)
+[English](./README.en.md) | 中文 | [共享总览](../README.md) | [共享指令说明](../directives.md) | [Python 指令补充](./directives.md) | [PyPI 发布说明](./PYPI.md)
 
 ---
 
@@ -10,6 +10,7 @@
 
 - 共享总览：`../README.md`
 - 共享指令说明：`../directives.md`
+- Python 发布说明：`./PYPI.md`
 
 ## 安装
 

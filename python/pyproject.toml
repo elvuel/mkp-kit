@@ -4,24 +4,37 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mkp-python"
-version = "0.1.0"
-description = "Python port of the mkp-go MKP serial SDK, API server, and CLI"
-readme = "README.md"
+version = "0.1.1"
+description = "Python SDK and tools for the MKP serial device protocol"
+readme = "README.en.md"
 requires-python = ">=3.12"
-authors = [{ name = "OpenAI Codex" }]
+authors = [{ name = "elvuel" }]
+keywords = ["mkp", "serial", "hid", "macro", "automation"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Hardware",
+]
 dependencies = [
   "pyserial>=3.5",
-  "fastapi>=0.116.0",
-  "uvicorn>=0.35.0",
+  "fastapi>=0.116.0,<1",
+  "uvicorn>=0.35.0,<1",
   "sqlalchemy>=2.0.40",
   "PyJWT>=2.10.1",
-  "httpx>=0.28.1",
-  "typer>=0.16.1",
-  "python-multipart>=0.0.20",
+  "httpx>=0.28.1,<1",
+  "typer>=0.16.1,<1",
+  "python-multipart>=0.0.20,<1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3.5"]
+
+[project.urls]
+Homepage = "https://github.com/elvuel/mkp-kit/tree/main/python"
+Repository = "https://github.com/elvuel/mkp-kit"
+Issues = "https://github.com/elvuel/mkp-kit/issues"
 
 [project.scripts]
 mkp = "mkp_python.cli:main"

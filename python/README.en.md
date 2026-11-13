@@ -1,6 +1,6 @@
 # MKP Python
 
-English | [中文](./README.md) | [Shared Overview](../README.en.md) | [Shared Command Reference](../directives.en.md) | [Python Directive Supplement](./directives.en.md)
+English | [中文](./README.md) | [Shared Overview](../README.en.md) | [Shared Command Reference](../directives.en.md) | [Python Directive Supplement](./directives.en.md) | [PyPI Publishing Guide](./PYPI.md)
 
 ---
 
@@ -10,6 +10,7 @@ Cross-language shared content is maintained at the repository root:
 
 - Shared overview: `../README.en.md`
 - Shared command reference: `../directives.en.md`
+- Python publishing guide: `./PYPI.md`
 
 ## Installation
 
