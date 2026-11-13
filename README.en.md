@@ -4,7 +4,7 @@
 
 ---
 
-`mkp-kit` is the monorepo for the MKP device SDK, maintained across Go, Python, Rust, Node.js, and C++.
+`mkp-kit` is the monorepo for the MKP device SDK, maintained across Go, Python, Rust, Node.js, C++, and .NET.
 
 ## What is MKP?
 
@@ -16,11 +16,11 @@ A typical flow looks like this:
 Host program -> serial port -> MKP device / firmware -> USB HID mouse / keyboard events -> target system
 ```
 
-All five language ports therefore share the same device protocol, the same directive semantics, and the same device-side recording / replay / file-management capabilities.
+All six language ports therefore share the same device protocol, the same directive semantics, and the same device-side recording / replay / file-management capabilities.
 
 ## Monorepo Positioning
 
-`mkp-kit` no longer treats Go, Python, Rust, Node.js, and C++ as unrelated repositories. It treats them as **five language implementations of one SDK product**.
+`mkp-kit` no longer treats Go, Python, Rust, Node.js, C++, and .NET as unrelated repositories. It treats them as **six language implementations of one SDK product**.
 
 The following should therefore be maintained as cross-language concerns by default:
 
@@ -51,6 +51,7 @@ For shared directive semantics, use [`directives.en.md`](./directives.en.md).
 - `rust/`: Rust SDK, server, CLI, converter, file server, examples, and language-specific supplement docs
 - `node/`: Node.js SDK, server, CLI, converter, file server, examples, and language-specific supplement docs
 - `cpp/`: C++ SDK, helpers, controller, server, converter, file server, examples, and language-specific supplement docs
+- `dotnet/`: .NET SDK, CLI, client, server, converter, file server, examples, and language-specific supplement docs
 - `docs/`: repo-level governance, research, and maintenance notes
 
 ## Documentation Strategy
@@ -80,6 +81,7 @@ In practice, this means:
 - Rust: `rust/README.md`
 - Node.js: `node/README.md`
 - C++: `cpp/README.md`
+- .NET: `dotnet/README.md`
 
 Language-specific directive supplements:
 
@@ -88,6 +90,7 @@ Language-specific directive supplements:
 - Rust: `rust/directives.en.md`
 - Node.js: `node/directives.en.md`
 - C++: `cpp/directives.en.md`
+- .NET: `dotnet/directives.en.md`
 
 ## Directory Mapping
 
@@ -96,6 +99,7 @@ Language-specific directive supplements:
 - former `mkp-rust` -> `rust/`
 - Node.js implementation added natively inside the monorepo -> `node/`
 - C++ implementation added natively inside the monorepo -> `cpp/`
+- .NET implementation added natively inside the monorepo -> `dotnet/`
 
 ## History
 
@@ -105,5 +109,5 @@ This merge keeps the existing Git histories by importing each project with subtr
 - `python/` <- `mkp-python`
 - `rust/` <- `mkp-rust`
 
-`node/` and `cpp/` currently continue to evolve directly inside the `mkp-kit` monorepo.
+`node/`, `cpp/`, and `dotnet/` currently continue to evolve directly inside the `mkp-kit` monorepo.
 

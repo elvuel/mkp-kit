@@ -4,7 +4,7 @@
 
 ---
 
-`mkp-kit` 是 MKP 设备 SDK 的 monorepo，统一维护 Go、Python、Rust、Node.js、C++ 五个语言实现。
+`mkp-kit` 是 MKP 设备 SDK 的 monorepo，统一维护 Go、Python、Rust、Node.js、C++、.NET 六个语言实现。
 
 ## MKP 是什么？
 
@@ -16,11 +16,11 @@
 上位机程序 -> 串口 -> MKP 设备 / 固件 -> USB HID 鼠标 / 键盘事件 -> 目标系统
 ```
 
-也就是说，五个语言端口共享的是同一套设备协议、同一批 directive 语义、以及同一组设备侧录制 / 回放 / 文件管理能力。
+也就是说，六个语言端口共享的是同一套设备协议、同一批 directive 语义、以及同一组设备侧录制 / 回放 / 文件管理能力。
 
 ## Monorepo 定位
 
-`mkp-kit` 不再把 Go、Python、Rust、Node.js、C++ 视为多个互不相关的仓库，而是把它们视为 **同一 SDK 产品的五种语言实现**。
+`mkp-kit` 不再把 Go、Python、Rust、Node.js、C++、.NET 视为多个互不相关的仓库，而是把它们视为 **同一 SDK 产品的六种语言实现**。
 
 因此，以下内容默认按跨语言能力统一维护：
 
@@ -51,6 +51,7 @@
 - `rust/`：Rust 版 SDK / server / CLI / converter / file server / 语言补充文档
 - `node/`：Node.js 版 SDK / server / CLI / converter / file server / 语言补充文档
 - `cpp/`：C++ 版 SDK / helper / controller / server / converter / file server / 语言补充文档
+- `dotnet/`：.NET 版 SDK / CLI / client / server / converter / file server / examples 与语言补充文档
 - `docs/`：仓库级治理、研究、维护说明等补充文档
 
 ## 文档维护策略
@@ -80,6 +81,7 @@
 - Rust：`rust/README.md`
 - Node.js：`node/README.md`
 - C++：`cpp/README.md`
+- .NET：`dotnet/README.md`
 
 语言补充版 directive 说明：
 
@@ -88,6 +90,7 @@
 - Rust：`rust/directives.md`
 - Node.js：`node/directives.md`
 - C++：`cpp/directives.md`
+- .NET：`dotnet/directives.md`
 
 ## 目录映射
 
@@ -96,6 +99,7 @@
 - 原 `mkp-rust` -> `rust/`
 - monorepo 内新增 Node.js 实现 -> `node/`
 - monorepo 内新增 C++ 实现 -> `cpp/`
+- monorepo 内新增 .NET 实现 -> `dotnet/`
 
 ## 历史说明
 
@@ -105,5 +109,5 @@
 - `python/` <- `mkp-python`
 - `rust/` <- `mkp-rust`
 
-`node/` 与 `cpp/` 当前在 `mkp-kit` monorepo 中继续演进。
+`node/`、`cpp/` 与 `dotnet/` 当前在 `mkp-kit` monorepo 中继续演进。
 

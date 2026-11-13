@@ -3,3 +3,7 @@ Thumbs.db
 .vscode/
 .idea/
 .mkp-debug/
+.vs/
+*.user
+dotnet/**/bin/
+dotnet/**/obj/

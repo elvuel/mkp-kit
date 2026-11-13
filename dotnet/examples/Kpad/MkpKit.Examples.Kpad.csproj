@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>mkp-dotnet-example-kpad</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\MkpKit.Examples.Common.csproj" />
+    <ProjectReference Include="..\..\src\MkpKit\MkpKit.csproj" />
+  </ItemGroup>
+</Project>

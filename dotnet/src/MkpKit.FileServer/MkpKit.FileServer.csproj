@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>mkp-dotnet-file-server</AssemblyName>
+  </PropertyGroup>
+</Project>
