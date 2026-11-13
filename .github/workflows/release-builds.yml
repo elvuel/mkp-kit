@@ -261,6 +261,11 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -269,6 +274,7 @@ jobs:
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag }}
           RELEASE_NAME: ${{ inputs.release_name }}
           TARGET_REF: ${{ inputs.target_ref }}
@@ -293,12 +299,13 @@ jobs:
             title="$TAG"
           fi
 
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${asset_files[@]}" --clobber
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${asset_files[@]}" --repo "$GH_REPO" --clobber
           else
             if [ "$PRERELEASE" = 'true' ]; then
-              gh release create "$TAG" "${asset_files[@]}" --title "$title" --target "$TARGET_REF" --generate-notes --prerelease
+              gh release create "$TAG" "${asset_files[@]}" --repo "$GH_REPO" --title "$title" --target "$TARGET_REF" --generate-notes --prerelease
             else
-              gh release create "$TAG" "${asset_files[@]}" --title "$title" --target "$TARGET_REF" --generate-notes
+              gh release create "$TAG" "${asset_files[@]}" --repo "$GH_REPO" --title "$title" --target "$TARGET_REF" --generate-notes
             fi
           fi
+
