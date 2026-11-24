@@ -20,6 +20,7 @@ M10Option base_m10_option(const std::optional<M10Option> &override_option) {
   if (override_option) {
     next.async_mode = override_option->async_mode;
     next.sync_ignore_output = override_option->sync_ignore_output;
+    next.sync_output_timeout_ms = override_option->sync_output_timeout_ms;
   }
   return next;
 }

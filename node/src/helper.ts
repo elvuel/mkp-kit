@@ -19,6 +19,7 @@ function cloneKpadBase(base?: KpadOption): KpadOption {
   next.verbose = base.verbose;
   next.asyncMode = base.asyncMode;
   next.syncIgnoreOutput = base.syncIgnoreOutput;
+  next.syncOutputTimeoutMs = base.syncOutputTimeoutMs;
   return next;
 }
 
@@ -33,6 +34,7 @@ function cloneM10Base(base?: M10Option): M10Option {
   next.wheel = base.wheel;
   next.asyncMode = base.asyncMode;
   next.syncIgnoreOutput = base.syncIgnoreOutput;
+  next.syncOutputTimeoutMs = base.syncOutputTimeoutMs;
   return next;
 }
 

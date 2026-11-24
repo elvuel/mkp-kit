@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // M10 coordinate and wheel ranges:
@@ -74,6 +75,8 @@ type M10Option struct {
 	Wheel            *int `json:"wheel,omitempty"`
 	Async            bool `json:"async"`
 	SyncIgnoreOutput bool `json:"sync_ignore_output,omitempty"`
+	// SyncOutputTimeout 是本次 m10 同步发送的回包等待超时（0 表示使用端口默认超时）。
+	SyncOutputTimeout time.Duration `json:"-"`
 	// --b: botton
 	// --x: x
 	// --y: y
@@ -278,6 +281,14 @@ func (opt *M10Option) WithAsync(async bool) *M10Option {
 func (opt *M10Option) WithSyncIgnoreOutput(syncIgnoreOutput bool) *M10Option {
 	opt.SyncIgnoreOutput = syncIgnoreOutput
 	opt.Async = !syncIgnoreOutput
+	return opt
+}
+
+// WithSyncOutputTimeout 覆盖本次 m10 发送的同步回包等待超时；0 表示使用端口默认超时。
+func (opt *M10Option) WithSyncOutputTimeout(timeout time.Duration) *M10Option {
+	if opt != nil {
+		opt.SyncOutputTimeout = timeout
+	}
 	return opt
 }
 

@@ -12,6 +12,7 @@ public final class KpadOption {
     private boolean verbose;
     private boolean asyncMode = true;
     private boolean syncIgnoreOutput;
+    private Integer syncOutputTimeoutMs;
     private CommitKeys commitKeys;
 
     public List<String> modKeys() { return List.copyOf(modKeys); }
@@ -21,6 +22,7 @@ public final class KpadOption {
     public boolean verbose() { return verbose; }
     public boolean asyncMode() { return asyncMode; }
     public boolean syncIgnoreOutput() { return syncIgnoreOutput; }
+    public Integer syncOutputTimeoutMs() { return syncOutputTimeoutMs; }
 
     public KpadOption withKeys(List<String> values) {
         List<String> normalized = values.stream().map(Keycodes::normalizeKpadKey).filter(value -> !value.isEmpty()).toList();
@@ -63,6 +65,11 @@ public final class KpadOption {
     public KpadOption withSyncIgnoreOutput(boolean value) {
         this.syncIgnoreOutput = value;
         this.asyncMode = !value;
+        return this;
+    }
+
+    public KpadOption withSyncOutputTimeout(Integer value) {
+        this.syncOutputTimeoutMs = value;
         return this;
     }
 
@@ -146,6 +153,7 @@ public final class KpadOption {
             .withKeys(releaseKeys)
             .withAutoRelease();
         releaseOption.syncIgnoreOutput = syncIgnoreOutput;
+        releaseOption.syncOutputTimeoutMs = syncOutputTimeoutMs;
         if (releaseKeys.stream().anyMatch(Keycodes::isModKey)) {
             releaseOption.withModKeys(releaseMod);
         }
@@ -155,6 +163,7 @@ public final class KpadOption {
             .withVerbose(verbose)
             .withAsync(asyncMode);
         remainOption.syncIgnoreOutput = syncIgnoreOutput;
+        remainOption.syncOutputTimeoutMs = syncOutputTimeoutMs;
         List<String> remain = new ArrayList<>(nextMod);
         remain.addAll(nextKeys);
         if (remain.isEmpty()) {
@@ -189,7 +198,8 @@ public final class KpadOption {
             .withDelay(delay)
             .withVerbose(verbose)
             .withAsync(asyncMode)
-            .withSyncIgnoreOutput(syncIgnoreOutput);
+            .withSyncIgnoreOutput(syncIgnoreOutput)
+            .withSyncOutputTimeout(syncOutputTimeoutMs);
     }
 
     public record KeyUpPlan(KpadOption release, KpadOption remain) {

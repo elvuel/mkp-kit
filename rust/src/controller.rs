@@ -31,6 +31,7 @@ fn base_m10_option(override_opt: Option<&M10Option>) -> M10Option {
     if let Some(override_opt) = override_opt {
         opt.async_mode = override_opt.async_mode;
         opt.sync_ignore_output = override_opt.sync_ignore_output;
+        opt.sync_output_timeout = override_opt.sync_output_timeout;
     }
     opt
 }

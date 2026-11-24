@@ -35,6 +35,10 @@ std::string join_args(const std::vector<std::string> &args) {
   return out.str();
 }
 
+std::optional<int> normalized_sync_output_timeout_ms(std::optional<int> timeout_ms) {
+  return timeout_ms && *timeout_ms > 0 ? timeout_ms : std::nullopt;
+}
+
 std::string build_alog_directive(const std::string &log_name, const LogOption &opt) {
   std::vector<std::string> args{compose_log_fullpath(log_name)};
   const auto extra = opt.cli_args();
@@ -373,14 +377,14 @@ void SerialPort::mouse10(const M10Option &opt) {
   std::string directive = "m10 --port " + mouse_port_flag;
   const auto fragment = opt.to_cli_fragment();
   if (!fragment.empty()) directive += " " + fragment;
-  if (opt.is_async()) send_directive_async(directive); else send_directive(directive, std::nullopt);
+  if (opt.is_async()) send_directive_async(directive); else send_directive(directive, normalized_sync_output_timeout_ms(opt.sync_output_timeout_ms));
 }
 
 void SerialPort::keypad(KpadOption opt) {
   std::string directive = "kpad --port " + keyboard_port_flag;
   const auto fragment = opt.to_cli_fragment();
   if (!fragment.empty()) directive += " " + fragment;
-  if (opt.is_async()) send_directive_async(directive); else send_directive(directive, std::nullopt);
+  if (opt.is_async()) send_directive_async(directive); else send_directive(directive, normalized_sync_output_timeout_ms(opt.sync_output_timeout_ms));
   opt.commit_state();
 }
 
@@ -526,6 +530,7 @@ void mouse_release_all(SFSerialPort &sfport, const std::optional<M10Option> &opt
   if (opt) {
     release.async_mode = opt->async_mode;
     release.sync_ignore_output = opt->sync_ignore_output;
+    release.sync_output_timeout_ms = opt->sync_output_timeout_ms;
   }
   sfport.mouse10(release);
 }

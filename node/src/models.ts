@@ -203,6 +203,7 @@ export class M10Option {
   wheel: number | undefined;
   asyncMode = true;
   syncIgnoreOutput = false;
+  syncOutputTimeoutMs: number | undefined;
 
   setButton(value: number): this {
     this.button = value;
@@ -245,6 +246,11 @@ export class M10Option {
     return this;
   }
 
+  withSyncOutputTimeout(syncOutputTimeoutMs: number): this {
+    this.syncOutputTimeoutMs = syncOutputTimeoutMs;
+    return this;
+  }
+
   isAsync(): boolean {
     return this.asyncMode && !this.syncIgnoreOutput;
   }
@@ -275,6 +281,7 @@ export class KpadOption {
   verbose = false;
   asyncMode = true;
   syncIgnoreOutput = false;
+  syncOutputTimeoutMs: number | undefined;
   private commitKeys: { keys: string[]; isDown: boolean } | undefined;
 
   withKeys(keys: string[]): this {
@@ -340,6 +347,11 @@ export class KpadOption {
   withSyncIgnoreOutput(syncIgnoreOutput: boolean): this {
     this.syncIgnoreOutput = syncIgnoreOutput;
     this.asyncMode = !syncIgnoreOutput;
+    return this;
+  }
+
+  withSyncOutputTimeout(syncOutputTimeoutMs: number): this {
+    this.syncOutputTimeoutMs = syncOutputTimeoutMs;
     return this;
   }
 
@@ -412,12 +424,14 @@ export class KpadOption {
       .withKeys(releaseKeys)
       .withAutoRelease();
     releaseOpt.syncIgnoreOutput = this.syncIgnoreOutput;
+    releaseOpt.syncOutputTimeoutMs = this.syncOutputTimeoutMs;
     if (releaseKeys.some((item) => isModKey(item))) {
       releaseOpt.withModKeys(releaseMod);
     }
 
     const remainOpt = new KpadOption().withDelay(this.delay).withVerbose(this.verbose).withAsync(this.asyncMode);
     remainOpt.syncIgnoreOutput = this.syncIgnoreOutput;
+    remainOpt.syncOutputTimeoutMs = this.syncOutputTimeoutMs;
     const remain = [...nextMod, ...nextKeys];
     if (remain.length > 0) {
       remainOpt.withKeys(remain);

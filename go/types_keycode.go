@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/duke-git/lancet/v2/slice"
 )
@@ -83,6 +84,8 @@ type KpadOption struct {
 	Async bool `json:"async"`
 	// 是否同步发送并忽略输出，true: SendDirectiveIgnoreOutput
 	SyncIgnoreOutput bool `json:"sync_ignore_output,omitempty"`
+	// SyncOutputTimeout 是本次 kpad 同步发送的回包等待超时（0 表示使用端口默认超时）。
+	SyncOutputTimeout time.Duration `json:"-"`
 
 	// commitKpadStateFn runs after successful kpad send.
 	// commitKpadStateFn 在 kpad 发送成功后提交本地状态变更。
@@ -267,6 +270,14 @@ func (opt *KpadOption) WithSyncIgnoreOutput(syncIgnoreOutput bool) *KpadOption {
 	return opt
 }
 
+// WithSyncOutputTimeout 覆盖本次 kpad 发送的同步回包等待超时；0 表示使用端口默认超时。
+func (opt *KpadOption) WithSyncOutputTimeout(timeout time.Duration) *KpadOption {
+	if opt != nil {
+		opt.SyncOutputTimeout = timeout
+	}
+	return opt
+}
+
 // IsAsync reports whether kpad should be sent asynchronously.
 // IsAsync 返回 kpad 是否应按异步模式发送。
 func (opt *KpadOption) IsAsync() bool {
@@ -371,6 +382,7 @@ func (opt *KpadOption) KeyUp(key string) (*KpadOption, *KpadOption) {
 		WithKeys(keys).
 		WithAutoRelease()
 	releaseOpt.SyncIgnoreOutput = opt.SyncIgnoreOutput
+	releaseOpt.SyncOutputTimeout = opt.SyncOutputTimeout
 	if hasKpadModKey(keys) {
 		releaseOpt.WithModKeys(releaseModKeys)
 	}
@@ -380,6 +392,7 @@ func (opt *KpadOption) KeyUp(key string) (*KpadOption, *KpadOption) {
 		WithVerbose(opt.Verbose).
 		WithAsync(opt.Async)
 	remainHoldOpt.SyncIgnoreOutput = opt.SyncIgnoreOutput
+	remainHoldOpt.SyncOutputTimeout = opt.SyncOutputTimeout
 
 	if len(remainKeys) == 0 {
 		remainHoldOpt.WithKey("NONE").WithHold()

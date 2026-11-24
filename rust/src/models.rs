@@ -6,6 +6,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::sync::Mutex;
+use std::time::Duration;
 
 static PRESSED_MOD_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
 static PRESSED_KEYS: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
@@ -319,6 +320,8 @@ pub struct M10Option {
     pub async_mode: bool,
     #[serde(default)]
     pub sync_ignore_output: bool,
+    #[serde(skip)]
+    pub sync_output_timeout: Option<Duration>,
 }
 
 fn default_true() -> bool {
@@ -334,6 +337,7 @@ impl Default for M10Option {
             wheel: None,
             async_mode: true,
             sync_ignore_output: false,
+            sync_output_timeout: None,
         }
     }
 }
@@ -398,6 +402,11 @@ impl M10Option {
     pub fn with_sync_ignore_output(mut self, sync_ignore_output: bool) -> Self {
         self.sync_ignore_output = sync_ignore_output;
         self.async_mode = !sync_ignore_output;
+        self
+    }
+
+    pub fn with_sync_output_timeout(mut self, sync_output_timeout: Duration) -> Self {
+        self.sync_output_timeout = Some(sync_output_timeout);
         self
     }
 
@@ -517,6 +526,8 @@ pub struct KpadOption {
     #[serde(default)]
     pub sync_ignore_output: bool,
     #[serde(skip)]
+    pub sync_output_timeout: Option<Duration>,
+    #[serde(skip)]
     commit_keys: Option<(Vec<String>, bool)>,
 }
 
@@ -530,6 +541,7 @@ impl Default for KpadOption {
             verbose: false,
             async_mode: true,
             sync_ignore_output: false,
+            sync_output_timeout: None,
             commit_keys: None,
         }
     }
@@ -616,6 +628,11 @@ impl KpadOption {
         self
     }
 
+    pub fn with_sync_output_timeout(mut self, sync_output_timeout: Duration) -> Self {
+        self.sync_output_timeout = Some(sync_output_timeout);
+        self
+    }
+
     pub fn is_async(&self) -> bool {
         self.async_mode && !self.sync_ignore_output
     }
@@ -679,6 +696,7 @@ impl KpadOption {
             .with_keys(release_keys.clone())
             .with_auto_release();
         release_opt.sync_ignore_output = self.sync_ignore_output;
+        release_opt.sync_output_timeout = self.sync_output_timeout;
         if release_keys
             .iter()
             .any(|item| MOD_KEY_NAMES.contains(&item.as_str()))
@@ -691,6 +709,7 @@ impl KpadOption {
             .with_verbose(self.verbose)
             .with_async(self.async_mode);
         remain_opt.sync_ignore_output = self.sync_ignore_output;
+        remain_opt.sync_output_timeout = self.sync_output_timeout;
         let remain: Vec<String> = next_mod.iter().chain(next_keys.iter()).cloned().collect();
         if remain.is_empty() {
             remain_opt = remain_opt.with_key("NONE").with_hold();

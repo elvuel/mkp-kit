@@ -61,6 +61,7 @@ public sealed class M10Option
     public int? Wheel { get; private set; }
     public bool AsyncMode { get; private set; } = true;
     public bool SyncIgnoreOutput { get; private set; }
+    public int? SyncOutputTimeoutMs { get; private set; }
 
     public M10Option SetButton(int value) { Button = value; return this; }
     public M10Option WithoutButton() { Button = null; return this; }
@@ -69,6 +70,7 @@ public sealed class M10Option
     public M10Option SetWheel(int value) { Wheel = value; return this; }
     public M10Option WithAsync(bool value) { AsyncMode = value; SyncIgnoreOutput = !value; return this; }
     public M10Option WithSyncIgnoreOutput(bool value) { SyncIgnoreOutput = value; AsyncMode = !value; return this; }
+    public M10Option WithSyncOutputTimeout(int value) { SyncOutputTimeoutMs = value; return this; }
     public bool IsAsync() => AsyncMode && !SyncIgnoreOutput;
 
     public string ToCliFragment()
@@ -95,6 +97,7 @@ public sealed class KpadOption
     public bool Verbose { get; private set; }
     public bool AsyncMode { get; private set; } = true;
     public bool SyncIgnoreOutput { get; private set; }
+    public int? SyncOutputTimeoutMs { get; private set; }
 
     public KpadOption WithKeys(IEnumerable<string> keys)
     {
@@ -133,6 +136,7 @@ public sealed class KpadOption
     public KpadOption WithVerbose(bool value) { Verbose = value; return this; }
     public KpadOption WithAsync(bool value) { AsyncMode = value; SyncIgnoreOutput = !value; return this; }
     public KpadOption WithSyncIgnoreOutput(bool value) { SyncIgnoreOutput = value; AsyncMode = !value; return this; }
+    public KpadOption WithSyncOutputTimeout(int value) { SyncOutputTimeoutMs = value; return this; }
     public bool IsAsync() => AsyncMode && !SyncIgnoreOutput;
 
     public string ToCliFragment()
@@ -228,6 +232,7 @@ public sealed class KpadOption
             .WithKeys(releaseKeys)
             .WithAutoRelease();
         releaseOpt.SyncIgnoreOutput = SyncIgnoreOutput;
+        releaseOpt.SyncOutputTimeoutMs = SyncOutputTimeoutMs;
         if (releaseKeys.Any(KpadKeycodes.IsModKey))
         {
             releaseOpt.WithModKeys(releaseMod);
@@ -238,6 +243,7 @@ public sealed class KpadOption
             .WithVerbose(Verbose)
             .WithAsync(AsyncMode);
         remainOpt.SyncIgnoreOutput = SyncIgnoreOutput;
+        remainOpt.SyncOutputTimeoutMs = SyncOutputTimeoutMs;
 
         var remain = nextMod.Concat(nextKeys).ToArray();
         if (remain.Length == 0)

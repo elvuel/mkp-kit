@@ -30,6 +30,10 @@ public sealed class Controller(SFSerialPort sfPort)
         for (var index = 0; index < steps; index++)
         {
             var next = option is null ? new M10Option() : new M10Option().WithAsync(option.AsyncMode).WithSyncIgnoreOutput(option.SyncIgnoreOutput);
+            if (option?.SyncOutputTimeoutMs is int timeoutMs)
+            {
+                next.WithSyncOutputTimeout(timeoutMs);
+            }
             next.SetX(xs[index]).SetY(ys[index]);
             await SerialPort.Mouse10Async(next, cancellationToken);
             await Task.Delay(DefaultM10StepMs, cancellationToken);

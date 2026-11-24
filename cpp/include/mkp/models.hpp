@@ -139,6 +139,7 @@ struct M10Option {
   std::optional<int> wheel;
   bool async_mode = true;
   bool sync_ignore_output = false;
+  std::optional<int> sync_output_timeout_ms;
 
   M10Option &set_button(int value);
   M10Option &with_button(int value);
@@ -148,6 +149,7 @@ struct M10Option {
   M10Option &set_wheel(int value);
   M10Option &with_async(bool value);
   M10Option &with_sync_ignore_output(bool value);
+  M10Option &with_sync_output_timeout(int timeout_ms);
   bool is_async() const;
   std::string to_cli_fragment() const;
 };
@@ -160,6 +162,7 @@ struct KpadOption {
   bool verbose = false;
   bool async_mode = true;
   bool sync_ignore_output = false;
+  std::optional<int> sync_output_timeout_ms;
 
   KpadOption &with_keys(const std::vector<std::string> &value);
   KpadOption &with_key(const std::string &key);
@@ -172,6 +175,7 @@ struct KpadOption {
   KpadOption &with_verbose(bool value);
   KpadOption &with_async(bool value);
   KpadOption &with_sync_ignore_output(bool value);
+  KpadOption &with_sync_output_timeout(int timeout_ms);
   bool is_async() const;
   std::string to_cli_fragment() const;
   KpadOption &key_down(const std::string &key);

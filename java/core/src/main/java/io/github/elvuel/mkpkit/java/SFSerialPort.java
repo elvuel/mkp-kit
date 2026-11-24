@@ -58,6 +58,11 @@ public final class SFSerialPort implements AutoCloseable {
         return target.sendAndReceive(directive, eofFlag, timeoutMs);
     }
 
+    public String sendDirective(String directive, Integer timeoutMs) throws Exception {
+        int effective = timeoutMs != null && timeoutMs > 0 ? timeoutMs : syncOutputTimeoutMs;
+        return sendDirective(directive, effective);
+    }
+
     public void sendDirectiveAsync(String directive) throws Exception {
         requireTransport().send(directive);
     }
@@ -100,7 +105,7 @@ public final class SFSerialPort implements AutoCloseable {
         if (option.isAsync()) {
             sendDirectiveAsync(directive);
         } else {
-            sendDirective(directive);
+            sendDirective(directive, option.syncOutputTimeoutMs());
         }
     }
 
@@ -113,7 +118,7 @@ public final class SFSerialPort implements AutoCloseable {
         if (option.isAsync()) {
             sendDirectiveAsync(directive);
         } else {
-            sendDirective(directive);
+            sendDirective(directive, option.syncOutputTimeoutMs());
         }
         option.commitState();
     }

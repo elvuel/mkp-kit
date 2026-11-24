@@ -533,6 +533,7 @@ func resolveKpadReleaseOption(base *mkpgo.KpadOption, override *mkpgo.KpadOption
 	if override != nil {
 		opt.Async = override.Async
 		opt.SyncIgnoreOutput = override.SyncIgnoreOutput
+		opt.SyncOutputTimeout = override.SyncOutputTimeout
 		opt.Verbose = override.Verbose
 	}
 	return opt

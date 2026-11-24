@@ -47,6 +47,7 @@ function baseM10Option(override?: M10Option): M10Option {
   }
   next.asyncMode = override.asyncMode;
   next.syncIgnoreOutput = override.syncIgnoreOutput;
+  next.syncOutputTimeoutMs = override.syncOutputTimeoutMs;
   return next;
 }
 

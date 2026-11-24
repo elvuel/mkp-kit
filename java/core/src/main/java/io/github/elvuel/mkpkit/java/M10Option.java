@@ -10,6 +10,7 @@ public final class M10Option {
     private Integer wheel;
     private boolean asyncMode = true;
     private boolean syncIgnoreOutput;
+    private Integer syncOutputTimeoutMs;
 
     public Integer button() { return button; }
     public Integer x() { return x; }
@@ -17,6 +18,7 @@ public final class M10Option {
     public Integer wheel() { return wheel; }
     public boolean asyncMode() { return asyncMode; }
     public boolean syncIgnoreOutput() { return syncIgnoreOutput; }
+    public Integer syncOutputTimeoutMs() { return syncOutputTimeoutMs; }
 
     public M10Option setButton(Integer value) { this.button = value; return this; }
     public M10Option withButton(Integer value) { return setButton(value); }
@@ -34,6 +36,11 @@ public final class M10Option {
     public M10Option withSyncIgnoreOutput(boolean value) {
         this.syncIgnoreOutput = value;
         this.asyncMode = !value;
+        return this;
+    }
+
+    public M10Option withSyncOutputTimeout(Integer value) {
+        this.syncOutputTimeoutMs = value;
         return this;
     }
 
@@ -69,6 +76,7 @@ public final class M10Option {
             .setY(y)
             .setWheel(wheel)
             .withAsync(asyncMode)
-            .withSyncIgnoreOutput(syncIgnoreOutput);
+            .withSyncIgnoreOutput(syncIgnoreOutput)
+            .withSyncOutputTimeout(syncOutputTimeoutMs);
     }
 }

@@ -138,6 +138,7 @@ M10Option &M10Option::set_y(int value) { y = value; return *this; }
 M10Option &M10Option::set_wheel(int value) { wheel = value; return *this; }
 M10Option &M10Option::with_async(bool value) { async_mode = value; sync_ignore_output = !value; return *this; }
 M10Option &M10Option::with_sync_ignore_output(bool value) { sync_ignore_output = value; async_mode = !value; return *this; }
+M10Option &M10Option::with_sync_output_timeout(int timeout_ms) { sync_output_timeout_ms = timeout_ms; return *this; }
 bool M10Option::is_async() const { return async_mode && !sync_ignore_output; }
 
 std::string M10Option::to_cli_fragment() const {
@@ -179,6 +180,7 @@ KpadOption &KpadOption::with_duration(int value) { if (value > 1) release = valu
 KpadOption &KpadOption::with_verbose(bool value) { verbose = value; return *this; }
 KpadOption &KpadOption::with_async(bool value) { async_mode = value; sync_ignore_output = !value; return *this; }
 KpadOption &KpadOption::with_sync_ignore_output(bool value) { sync_ignore_output = value; async_mode = !value; return *this; }
+KpadOption &KpadOption::with_sync_output_timeout(int timeout_ms) { sync_output_timeout_ms = timeout_ms; return *this; }
 bool KpadOption::is_async() const { return async_mode && !sync_ignore_output; }
 
 std::string KpadOption::to_cli_fragment() const {
@@ -253,6 +255,7 @@ std::pair<std::optional<KpadOption>, std::optional<KpadOption>> KpadOption::key_
   KpadOption release_opt;
   release_opt.with_delay(delay).with_verbose(verbose).with_async(async_mode).with_keys(release_keys).with_auto_release();
   release_opt.sync_ignore_output = sync_ignore_output;
+  release_opt.sync_output_timeout_ms = sync_output_timeout_ms;
   if (std::any_of(release_keys.begin(), release_keys.end(), [](const auto &value) { return is_mod_key(value); })) {
     release_opt.with_mod_keys(release_mod);
   }
@@ -260,6 +263,7 @@ std::pair<std::optional<KpadOption>, std::optional<KpadOption>> KpadOption::key_
   KpadOption remain_opt;
   remain_opt.with_delay(delay).with_verbose(verbose).with_async(async_mode);
   remain_opt.sync_ignore_output = sync_ignore_output;
+  remain_opt.sync_output_timeout_ms = sync_output_timeout_ms;
   auto remain = next_mod;
   remain.insert(remain.end(), next_keys.begin(), next_keys.end());
   if (!remain.empty()) {

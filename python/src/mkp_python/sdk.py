@@ -321,7 +321,8 @@ class SerialPort:
         self.set_sync_directive("", False, None)
 
     def send_directive(self, directive: str, ignore_output: bool = False, timeout: float | None = None) -> str:
-        timeout = timeout or self.sync_output_timeout
+        if not timeout or timeout <= 0:
+            timeout = self.sync_output_timeout
         with self._directive_lock:
             if self.sync_output_enabled:
                 reply: queue.Queue[str] = queue.Queue(maxsize=1)
@@ -375,7 +376,7 @@ class SerialPort:
         if opt.is_async():
             self.send_directive_async(directive)
         else:
-            self.send_directive(directive, ignore_output=True)
+            self.send_directive(directive, ignore_output=True, timeout=opt.sync_output_timeout)
 
     def keypad(self, opt: KpadOption) -> None:
         directive = f"kpad --port {self.keyboard_port_flag}"
@@ -385,7 +386,7 @@ class SerialPort:
         if opt.is_async():
             self.send_directive_async(directive)
         else:
-            self.send_directive(directive, ignore_output=True)
+            self.send_directive(directive, ignore_output=True, timeout=opt.sync_output_timeout)
         opt.commit_state()
 
     def send_parsed(self, directive: str, timeout: float | None = None) -> Any:
@@ -652,6 +653,7 @@ def mouse_release_all(sfport: SFSerialPort, opt: M10Option | None = None) -> Non
     if opt is not None:
         release_opt.async_mode = opt.async_mode
         release_opt.sync_ignore_output = opt.sync_ignore_output
+        release_opt.sync_output_timeout = opt.sync_output_timeout
     sfport.mouse10(release_opt)
 
 

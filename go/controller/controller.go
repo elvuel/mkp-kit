@@ -295,6 +295,9 @@ func (c *Controller) MouseClick(args ...interface{}) {
 // MouseClickWithOption 点击鼠标按键，并可通过 m10 覆盖配置执行双击。
 func (c *Controller) MouseClickWithOption(button int, double bool, sleepInterval int, override *mkpgo.M10Option) {
 	opt := mkpgo.NewM10Option().WithAsync(controllerM10Async(override))
+	if override != nil {
+		opt.WithSyncOutputTimeout(override.SyncOutputTimeout)
+	}
 	opt.WithButton(button).SetX(0).SetY(0)
 	c.sfport.Mouse10(opt)
 
@@ -326,6 +329,9 @@ func (c *Controller) MouseScroll(dir string, steps int, sleepInterval int) error
 // MouseScrollWithOption 使用可选的 m10 覆盖配置执行滚轮滚动。
 func (c *Controller) MouseScrollWithOption(dir string, steps int, sleepInterval int, override *mkpgo.M10Option) error {
 	opt := mkpgo.NewM10Option().WithAsync(controllerM10Async(override))
+	if override != nil {
+		opt.WithSyncOutputTimeout(override.SyncOutputTimeout)
+	}
 
 	mult := 1
 	if dir == "up" {
@@ -366,6 +372,9 @@ func (c *Controller) MouseScrollWithButton(dir string, steps int, button string,
 // MouseScrollWithButtonOption 使用 m10 覆盖配置在按住鼠标键时执行滚轮滚动。
 func (c *Controller) MouseScrollWithButtonOption(dir string, steps int, button string, sleepInterval int, override *mkpgo.M10Option) error {
 	opt := mkpgo.NewM10Option().WithAsync(controllerM10Async(override))
+	if override != nil {
+		opt.WithSyncOutputTimeout(override.SyncOutputTimeout)
+	}
 
 	mult := 1
 	if dir == "up" {
@@ -411,6 +420,9 @@ func (c *Controller) MouseScrollWithButtonOption(dir string, steps int, button s
 // MouseDown 使用可选的 m10 配置按下一个鼠标按键。
 func (c *Controller) MouseDown(button string, opts ...*mkpgo.M10Option) error {
 	opt := mkpgo.NewM10Option().WithAsync(controllerM10Async(opts...))
+	if firstOpt := firstM10Option(opts...); firstOpt != nil {
+		opt.WithSyncOutputTimeout(firstOpt.SyncOutputTimeout)
+	}
 	opt.WithButton(int(mkpgo.CheckMouseButton(button))).SetX(0).SetY(0)
 	c.sfport.Mouse10(opt)
 	return nil
@@ -420,6 +432,9 @@ func (c *Controller) MouseDown(button string, opts ...*mkpgo.M10Option) error {
 // MouseReleaseAll 使用可选的 m10 配置释放全部鼠标按键。
 func (c *Controller) MouseReleaseAll(opts ...*mkpgo.M10Option) error {
 	opt := mkpgo.NewM10Option().WithAsync(controllerM10Async(opts...))
+	if firstOpt := firstM10Option(opts...); firstOpt != nil {
+		opt.WithSyncOutputTimeout(firstOpt.SyncOutputTimeout)
+	}
 	opt.WithoutButton().SetX(0).SetY(0)
 	c.sfport.Mouse10(opt)
 	return nil

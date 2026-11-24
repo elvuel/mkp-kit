@@ -343,6 +343,15 @@ public sealed class SFSerialPort : ISFSerialPort
         return _transport.SendAndReceiveAsync(directive, eofFlag, SyncOutputTimeoutMs, cancellationToken);
     }
 
+    public Task<string> SendDirectiveAsync(string directive, int? timeoutMs, CancellationToken cancellationToken = default)
+    {
+        var effective = timeoutMs is > 0 ? timeoutMs.Value : SyncOutputTimeoutMs;
+        var eofFlag = _parsers.TryResolve(directive, out var parser) && parser is not null
+            ? parser.EofFlag
+            : DirectiveEofFlags.Cli;
+        return _transport.SendAndReceiveAsync(directive, eofFlag, effective, cancellationToken);
+    }
+
     public Task SendDirectiveNoWaitAsync(string directive, CancellationToken cancellationToken = default)
     {
         return _transport.SendAsync(directive, cancellationToken);
@@ -416,7 +425,7 @@ public sealed class SFSerialPort : ISFSerialPort
             return;
         }
 
-        _ = await SendDirectiveAsync(directive, cancellationToken);
+        _ = await SendDirectiveAsync(directive, option.SyncOutputTimeoutMs, cancellationToken);
     }
 
     public async Task KeypadAsync(KpadOption option, CancellationToken cancellationToken = default)
@@ -435,7 +444,7 @@ public sealed class SFSerialPort : ISFSerialPort
             return;
         }
 
-        _ = await SendDirectiveAsync(directive, cancellationToken);
+        _ = await SendDirectiveAsync(directive, option.SyncOutputTimeoutMs, cancellationToken);
         option.CommitState();
     }
 

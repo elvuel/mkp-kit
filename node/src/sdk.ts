@@ -496,7 +496,7 @@ export class SerialPort {
     if (opt.isAsync()) {
       await this.sendDirectiveAsync(directive);
     } else {
-      await this.sendDirective(directive);
+      await this.sendDirective(directive, opt.syncOutputTimeoutMs && opt.syncOutputTimeoutMs > 0 ? opt.syncOutputTimeoutMs : undefined);
     }
   }
 
@@ -509,7 +509,7 @@ export class SerialPort {
     if (opt.isAsync()) {
       await this.sendDirectiveAsync(directive);
     } else {
-      await this.sendDirective(directive);
+      await this.sendDirective(directive, opt.syncOutputTimeoutMs && opt.syncOutputTimeoutMs > 0 ? opt.syncOutputTimeoutMs : undefined);
     }
     opt.commitState();
   }

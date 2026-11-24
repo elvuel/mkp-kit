@@ -20,6 +20,10 @@ public static class DeviceHelpers
         next.WithVerbose(option.Verbose);
         next.WithAsync(option.AsyncMode);
         next.WithSyncIgnoreOutput(option.SyncIgnoreOutput);
+        if (option.SyncOutputTimeoutMs is int timeoutMs)
+        {
+            next.WithSyncOutputTimeout(timeoutMs);
+        }
         return next;
     }
 

@@ -47,6 +47,14 @@ func applyDirectiveOptions(opts ...DirectiveOption) DirectiveOptions {
 	return cfg
 }
 
+// syncOutputTimeoutOptions 返回给定同步回包等待超时对应的指令选项；<=0 时返回空（使用端口默认值）。
+func syncOutputTimeoutOptions(timeout time.Duration) []DirectiveOption {
+	if timeout <= 0 {
+		return nil
+	}
+	return []DirectiveOption{WithSyncOutputTimeout(timeout)}
+}
+
 // NewSFSerialPort creates a SerialPort with default SF-device settings.
 // NewSFSerialPort 创建带默认 SF 设备参数的串口实例。
 func NewSFSerialPort() *SFSerialPort {
@@ -383,10 +391,9 @@ func (sp *SFSerialPort) Mouse10Context(ctx context.Context, opt *M10Option) erro
 	if opt.IsAsync() {
 		return sp.SendDirectiveAsyncContext(ctx, directive)
 	}
-	return sp.SendDirectiveIgnoreOutputContext(ctx, directive)
+	return sp.SendDirectiveIgnoreOutputContext(ctx, directive, syncOutputTimeoutOptions(opt.SyncOutputTimeout)...)
 }
 
-// MouseReleaseAll releases all mouse buttons.
 // MouseReleaseAll 释放全部鼠标按键状态。
 func (sp *SFSerialPort) MouseReleaseAll(opts ...*M10Option) error {
 	return sp.MouseReleaseAllContext(context.Background(), opts...)
@@ -399,6 +406,7 @@ func (sp *SFSerialPort) MouseReleaseAllContext(ctx context.Context, opts ...*M10
 	if len(opts) > 0 && opts[0] != nil {
 		btnReleaseOpt.Async = opts[0].Async
 		btnReleaseOpt.SyncIgnoreOutput = opts[0].SyncIgnoreOutput
+		btnReleaseOpt.SyncOutputTimeout = opts[0].SyncOutputTimeout
 	}
 	return sp.Mouse10Context(ctx, btnReleaseOpt)
 }
@@ -420,7 +428,7 @@ func (sp *SFSerialPort) KeypadContext(ctx context.Context, opt *KpadOption) erro
 	if opt.IsAsync() {
 		err = sp.SendDirectiveAsyncContext(ctx, directive)
 	} else {
-		err = sp.SendDirectiveIgnoreOutputContext(ctx, directive)
+		err = sp.SendDirectiveIgnoreOutputContext(ctx, directive, syncOutputTimeoutOptions(opt.SyncOutputTimeout)...)
 	}
 	if err != nil {
 		return err

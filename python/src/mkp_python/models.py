@@ -232,6 +232,7 @@ class M10Option:
     wheel: int | None = None
     async_mode: bool = True
     sync_ignore_output: bool = False
+    sync_output_timeout: float | None = None
 
     def reset(self) -> "M10Option":
         self.button = self.x = self.y = self.wheel = None
@@ -287,6 +288,10 @@ class M10Option:
         self.async_mode = not sync_ignore_output
         return self
 
+    def with_sync_output_timeout(self, sync_output_timeout: float | None) -> "M10Option":
+        self.sync_output_timeout = sync_output_timeout
+        return self
+
     def is_async(self) -> bool:
         return self.async_mode and not self.sync_ignore_output
 
@@ -315,6 +320,7 @@ class KpadOption:
     verbose: bool = False
     async_mode: bool = True
     sync_ignore_output: bool = False
+    sync_output_timeout: float | None = None
     _commit_keys: tuple[list[str], bool] | None = None
 
     def to_cli_fragment(self) -> str:
@@ -374,6 +380,10 @@ class KpadOption:
         self.async_mode = not sync_ignore_output
         return self
 
+    def with_sync_output_timeout(self, sync_output_timeout: float | None) -> "KpadOption":
+        self.sync_output_timeout = sync_output_timeout
+        return self
+
     def is_async(self) -> bool:
         return self.async_mode and not self.sync_ignore_output
 
@@ -420,10 +430,12 @@ class KpadOption:
                     _remove_once(next_keys, item)
         release_opt = KpadOption().with_delay(self.delay).with_verbose(self.verbose).with_async(self.async_mode).with_keys(release_keys).with_auto_release()
         release_opt.sync_ignore_output = self.sync_ignore_output
+        release_opt.sync_output_timeout = self.sync_output_timeout
         if any(item in MOD_KEY_NAMES for item in release_keys):
             release_opt.with_mod_keys(release_mod)
         remain_opt = KpadOption().with_delay(self.delay).with_verbose(self.verbose).with_async(self.async_mode)
         remain_opt.sync_ignore_output = self.sync_ignore_output
+        remain_opt.sync_output_timeout = self.sync_output_timeout
         remain = next_mod + next_keys
         if remain:
             remain_opt.with_keys(remain)

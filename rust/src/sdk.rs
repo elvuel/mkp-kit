@@ -600,7 +600,7 @@ impl SerialPort {
         if opt.is_async() {
             self.send_directive_async(&directive)
         } else {
-            self.send_directive(&directive, true, None).map(|_| ())
+            self.send_directive(&directive, true, opt.sync_output_timeout.filter(|t| !t.is_zero())).map(|_| ())
         }
     }
 
@@ -614,7 +614,7 @@ impl SerialPort {
         let result = if opt.is_async() {
             self.send_directive_async(&directive)
         } else {
-            self.send_directive(&directive, true, None).map(|_| ())
+            self.send_directive(&directive, true, opt.sync_output_timeout.filter(|t| !t.is_zero())).map(|_| ())
         };
         if result.is_ok() {
             opt.commit_state();
@@ -1011,6 +1011,7 @@ pub fn mouse_release_all(sfport: &mut SFSerialPort, opt: Option<M10Option>) -> R
     if let Some(opt) = opt {
         release_opt.async_mode = opt.async_mode;
         release_opt.sync_ignore_output = opt.sync_ignore_output;
+        release_opt.sync_output_timeout = opt.sync_output_timeout;
     }
     sfport.mouse10(release_opt)
 }
